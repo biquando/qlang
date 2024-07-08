@@ -1,0 +1,35 @@
+main: () -> void {
+    let s1: Student = Student {
+        name = "Alice",
+        hwScore = 0.95,
+        testScore = 0.85,
+    };
+
+    let s2: Student = {
+        name = "Bob",
+        hwScore = 0.8,
+        testScore = 0.9,
+    };
+
+    let avg: f32 = Student.avgScore([s1, s2]);
+}
+
+struct Student {
+    name: [char];
+    hwScore: f32;
+    testScore: f32;
+
+    score: () -> f32 {
+        return (0.3 * hwScore) + (0.7 * testScore);
+    }
+}
+
+namespace Student {
+    avgScore: (students: [Student]) -> f32 {
+        total: f32 = 0.0;
+        for (student in students) {
+            total += student.score();
+        }
+        return total / students.len;
+    }
+}
