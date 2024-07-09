@@ -1,0 +1,183 @@
+$(abc) => S1(a) -> S2(b) -> S3(c)
+
+$([abc]) => S1(abc)
+
+$(A|B) => $(A) | $(B)
+
+$(A*) => $(A)*
+
+abc[def] => $(abc)$([def])
+
+$(C(A|B)D) => $(C) -> ( $(A) | $(B) ) -> $(D)
+
+
+
+
+\"([^\\\n]|\\.)*\"
+CONCAT {
+    CONCAT {
+        \"                      S4
+        REPEAT {
+            ALTERNATE {
+                [^\\\n]         S3
+                CONCAT {
+                    \\          S1
+                    .           S2
+                }
+            }
+        }
+    }
+    \"                          S5
+}
+
+
+E(a) = a
+X(a) = a
+
+E(AB) = E(A)
+X(AB) = X(B)
+
+E(A+) = E(A)
+X(A+) = X(A)
+
+E(A*) = E(A) U E(\0)
+X(A*) = X(A) U X(\0)
+
+E(A|B) = E(A) U E(B)
+X(A|B) = X(A) U X(B)
+
+Observations:
+- A literal can be either a character /a/ or choice of characters /[abc]/
+- All incoming edges for a given state have the same literal
+- There is an isomorphism between literals and states (sans epsilons)
+- The character set for an epsilon state is the union of all successors
+
+
+State {
+    literal
+    list of edges (i.e. other states)
+    void addEdge(const State &other) {
+        edges.push_back(&other)
+    }
+    State *transition(char c) {
+        State *next = nullptr
+        for State *other in edges {
+            if other->matches(c) {
+                next = other
+                break
+            }
+        }
+        if next->literal is epsilon {
+            next = next->transition(c)
+        }
+        return next
+    }
+    bool matches(char c) {
+        if literal is character {
+            return c == literal
+        }
+        if literal is [] {
+            return c in []
+        }
+        if literal is epsilon {
+            for State *other in edges {
+                if other->matches(c) {
+                    return true
+                }
+            }
+            return false
+        }
+    }
+}
+
+StateGroup {
+    set of states
+    set of entry states
+    set of exit states
+}
+
+Node {
+    virtual StateGroup sg() = 0;
+    virtual void connect() = 0;
+}
+LiteralNode : Node {
+    void connect() {}
+}
+ConcatNode : Node {
+    StateGroup sg() {
+        return {
+            .states = left.states + right.states
+            .entry  = left.entry
+            .exit   = right.exit
+        }
+    }
+    void connect() {
+        for l in left.exit {
+            for r in right.entry {
+                l --> r
+            }
+        }
+    }
+}
+AlternateNode : Node {
+    StateGroup sg() {
+        return {
+            .states = left.states + right.states
+            .entry  = left.entry  + right.entry
+            .exit   = left.exit   + right.exit
+        }
+    }
+    void connect() {}
+}
+PlusNode : Node {
+    StateGroup sg() {
+        return {
+            .states = left.states
+            .entry  = left.entry
+            .exit   = left.exit
+        }
+    }
+    void connect() {
+        for e in left.entry {
+            for x in left.exit {
+                x --> e
+            }
+        }
+    }
+}
+StarNode : Node {
+    StateGroup sg() {
+        return {
+            .states = left.states + {Epsilon}
+            .entry  = left.entry  + {Epsilon}
+            .exit   = left.exit   + {Epsilon}
+        }
+    }
+    void connect() {
+        for e in left.entry {
+            for x in left.exit {
+                x --> e
+            }
+        }
+    }
+}
+
+
+
+char(a) = [a]
+entry(a) = [a] |-> state(a)
+exit(a) = state(a)
+
+char(a) = [abc]
+entry([abc]) = [abc] |-> state([abc])
+exit([abc]) = state([abc])
+
+char(AB) = char(A)
+entry(AB) = char(A) |-> entry(A)
+exit(AB) = exit(B)
+
+char(A*) = char(A)
+entry(A*) = char(A) |-> entry(A)
+exit(A*) = exit(A)
+
+entry(A|B) = { char(A) |-> entry(A), char(B) |-> entry(B) }
