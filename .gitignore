@@ -1,6 +1,6 @@
 *.o
 *.d
 compile_commands.json
-bin/
+tests/test-*
 .cache
 .DS_STORE

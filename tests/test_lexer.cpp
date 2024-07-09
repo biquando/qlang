@@ -1,6 +1,6 @@
-#include "Lexer.hpp"
-#include "State.hpp"
-#include "Token.hpp"
+#include "lexer/Lexer.hpp"
+#include "lexer/State.hpp"
+#include "lexer/Token.hpp"
 #include <iostream>
 
 /*=================
