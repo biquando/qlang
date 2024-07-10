@@ -1,112 +1,11 @@
 #include "lexer/Lexer.hpp"
+#include "lexer/Node.hpp"
 #include "lexer/State.hpp"
+#include "lexer/StateMachine.hpp"
 #include "lexer/Token.hpp"
+#include <cctype>
 #include <iostream>
-
-/*=================
- | State machines |
- =================*/
-
-// Decimal:    [0-9]+
-// Hex:        0x[0-9a-fA-F]+
-// Whitespace: [ ]+
-
-enum DecimalState {
-    DecimalEnter = (int)State::Enter, // [0-9]
-    Decimal1 = 1,                     // [0-9]*
-    DecimalAccept = (int)State::Accept,
-    DecimalReject = (int)State::Reject,
-};
-
-enum HexState {
-    HexEnter = (int)State::Enter, // 0
-    Hex1 = 1,                     // x
-    Hex2,                         // [0-9a-fA-F]
-    Hex3,                         // [0-9a-fA-F]*
-    HexAccept = (int)State::Accept,
-    HexReject = (int)State::Reject,
-};
-
-enum WhitespaceState {
-    WhitespaceEnter = (int)State::Enter,
-    Whitespace1 = 1,
-    WhitespaceAccept = (int)State::Accept,
-    WhitespaceReject = (int)State::Reject,
-};
-
-DecimalState transitionDecimal(DecimalState currState, char c)
-{
-    switch (currState) {
-    case DecimalEnter:
-        if (isnumber(c)) {
-            return Decimal1;
-        }
-        return DecimalReject;
-    case Decimal1:
-        if (isnumber(c)) {
-            return Decimal1;
-        }
-        return DecimalAccept;
-    case DecimalAccept:
-        return DecimalReject;
-    case DecimalReject:
-        return DecimalReject;
-    }
-}
-
-HexState transitionHex(HexState currState, char c)
-{
-    switch (currState) {
-    case HexEnter:
-        if (c == '0') {
-            return Hex1;
-        }
-        return HexReject;
-    case Hex1:
-        if (c == 'x') {
-            return Hex2;
-        }
-        return HexReject;
-    case Hex2:
-        if (ishexnumber(c)) {
-            return Hex3;
-        }
-        return HexReject;
-    case Hex3:
-        if (ishexnumber(c)) {
-            return Hex3;
-        }
-        return HexAccept;
-    case HexAccept:
-        return HexReject;
-    case HexReject:
-        return HexReject;
-    }
-}
-
-WhitespaceState transitionWhitespace(WhitespaceState currState, char c)
-{
-    switch (currState) {
-    case WhitespaceEnter:
-        if (isspace(c)) {
-            return Whitespace1;
-        }
-        return WhitespaceReject;
-    case Whitespace1:
-        if (isspace(c)) {
-            return Whitespace1;
-        }
-        return WhitespaceAccept;
-    case WhitespaceAccept:
-        return WhitespaceReject;
-    case WhitespaceReject:
-        return WhitespaceReject;
-    }
-}
-
-/*====================
- | Token definitions |
- ====================*/
+#include <memory>
 
 struct DecimalToken : public Token {
     unsigned long val;
@@ -129,20 +28,65 @@ struct HexToken : public Token {
     }
 };
 
+struct StringToken : public Token {
+    // TODO: parse string (handle quotes and escape characters)
+    StringToken(std::string text) : Token(text) {}
+    void print(std::ostream &o) const override
+    {
+        o << "StringToken(" << text << ")";
+    }
+};
+
+// Decimal:    [0-9]+
+// Hex:        0x[0-9a-fA-F]+
+// String:     \"([^"\\\n]|\\.)*\"
+// Whitespace: [ ]+
+
 int main(void)
 {
+    // Construct state machines
+    StateMachine dec(std::make_unique<PlusNode>(std::make_unique<LiteralNode>(
+        std::make_unique<PredState>([](char c) { return isnumber(c); }))));
+    StateMachine hex(std::make_unique<ConcatNode>(
+        std::make_unique<ConcatNode>(
+            std::make_unique<LiteralNode>(std::make_shared<CharState>('0')),
+            std::make_unique<LiteralNode>(std::make_shared<CharState>('x'))),
+        std::make_unique<PlusNode>(
+            std::make_unique<LiteralNode>(std::make_shared<PredState>(
+                [](char c) { return ishexnumber(c); })))));
+    StateMachine str(std::make_unique<ConcatNode>(
+        std::make_unique<ConcatNode>(
+            std::make_unique<LiteralNode>(std::make_shared<CharState>('\"')),
+            std::make_unique<StarNode>(std::make_unique<AlternateNode>(
+                std::make_unique<LiteralNode>(
+                    std::make_shared<PredState>([](char c) {
+                        return c != EOF && c != '\"' && c != '\\' && c != '\n';
+                    })),
+                std::make_unique<ConcatNode>(
+                    std::make_unique<LiteralNode>(
+                        std::make_shared<CharState>('\\')),
+                    std::make_unique<LiteralNode>(std::make_shared<PredState>(
+                        [](char c) { return c != EOF && c != '\n'; })))))),
+        std::make_unique<LiteralNode>(std::make_shared<CharState>('\"'))));
+    StateMachine ws(std::make_unique<PlusNode>(std::make_unique<LiteralNode>(
+        std::make_unique<PredState>([](char c) { return isspace(c); }))));
+
     Lexer l;
     l.addTokenType(
-        [](int s, char c) { return transitionDecimal((DecimalState)s, c); },
+        [&dec](int s, char c) { return dec.transition(s, c); },
         [](std::string text) { return std::make_unique<DecimalToken>(text); });
     l.addTokenType(
-        [](int s, char c) { return transitionHex((HexState)s, c); },
+        [&hex](int s, char c) { return hex.transition(s, c); },
         [](std::string text) { return std::make_unique<HexToken>(text); });
     l.addTokenType(
-        [](int s, char c) {
-            return transitionWhitespace((WhitespaceState)s, c);
-        },
-        [](std::string) { return std::unique_ptr<Token>(); });
+        [&str](int s, char c) { return str.transition(s, c); },
+        [](std::string text) { return std::make_unique<StringToken>(text); });
+    l.addTokenType([&ws](int s, char c) { return ws.transition(s, c); },
+                   [](std::string) { return nullptr; });
+    // l.addTokenType(
+    //     [&test](int s, char c) { return test.transition(s, c); },
+    //     [](std::string text) { return std::make_unique<StringToken>(text);
+    //     });
 
     std::vector<std::unique_ptr<Token>> tokens = l.tokenize(stdin);
     std::cout << "=== TOKENS (" << tokens.size() << ") ===\n";

@@ -1,0 +1,123 @@
+#include "Node.hpp"
+#include "lexer/State.hpp"
+#include <iostream>
+#include <memory>
+
+std::ostream &operator<<(std::ostream &o, const Node &n)
+{
+    n.print(o);
+    return o;
+}
+
+void Node::print(std::ostream &o) const
+{
+    o << "Node[" << states.size() << "," << entry.size() << "," << exit.size()
+      << "]";
+}
+
+LiteralNode::LiteralNode(std::shared_ptr<State> s)
+{
+    states.push_back(s);
+    entry.push_back(s);
+    exit.push_back(s);
+    connect();
+}
+
+void LiteralNode::connect() {}
+
+ConcatNode::ConcatNode(std::unique_ptr<Node> _left,
+                       std::unique_ptr<Node> _right)
+    : left(std::move(_left)), right(std::move(_right))
+{
+    for (auto ls : left->states) {
+        states.push_back(ls);
+    }
+    for (auto rs : right->states) {
+        states.push_back(rs);
+    }
+    for (auto le : left->entry) {
+        entry.push_back(le);
+    }
+    for (auto rx : right->exit) {
+        exit.push_back(rx);
+    }
+
+    connect();
+}
+
+void ConcatNode::connect()
+{
+    for (auto lx : left->exit) {
+        for (auto re : right->entry) {
+            lx->addEdge(re);
+        }
+    }
+}
+
+AlternateNode::AlternateNode(std::unique_ptr<Node> _left,
+                             std::unique_ptr<Node> _right)
+    : left(std::move(_left)), right(std::move(_right))
+{
+    for (auto ls : left->states) {
+        states.push_back(ls);
+    }
+    for (auto rs : right->states) {
+        states.push_back(rs);
+    }
+    for (auto le : left->entry) {
+        entry.push_back(le);
+    }
+    for (auto re : right->entry) {
+        entry.push_back(re);
+    }
+    for (auto lx : left->exit) {
+        exit.push_back(lx);
+    }
+    for (auto rx : right->exit) {
+        exit.push_back(rx);
+    }
+
+    connect();
+}
+
+void AlternateNode::connect() {}
+
+PlusNode::PlusNode(std::unique_ptr<Node> _opr) : opr(std::move(_opr))
+{
+    states = opr->states;
+    entry = opr->entry;
+    exit = opr->exit;
+    connect();
+}
+
+void PlusNode::connect()
+{
+    for (auto e : opr->entry) {
+        for (auto x : opr->exit) {
+            x->addEdge(e);
+        }
+    }
+}
+
+StarNode::StarNode(std::unique_ptr<Node> _opr) : opr(std::move(_opr))
+{
+    states = opr->states;
+    entry = opr->entry;
+    exit = opr->exit;
+
+    std::shared_ptr<EpsilonState> epsilon = std::make_shared<EpsilonState>();
+    states.push_back(epsilon);
+    entry.push_back(epsilon);
+    exit.push_back(epsilon);
+
+    connect();
+}
+
+void StarNode::connect()
+{
+    for (auto e : opr->entry) {
+        for (auto x : opr->exit) {
+            x->addEdge(e);
+        }
+    }
+}

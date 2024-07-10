@@ -1,6 +1,6 @@
 CC = clang++
 LD = clang++
-CPPFLAGS := $(CPPFLAGS) --std=c++17 -Wall -Wextra -pedantic -Isrc
+CPPFLAGS := $(CPPFLAGS) --std=c++17 -Wall -Wextra -pedantic -Isrc -g -O0
 
 SRC = $(wildcard src/*.cpp) $(wildcard src/lexer/*.cpp)
 OBJ = $(SRC:.cpp=.o)
@@ -13,6 +13,7 @@ TESTS_BIN = $(TESTS_SRC:tests/test_%.cpp=tests/test-%)
 TESTS = $(subst tests/,,$(TESTS_BIN))
 
 .PHONY: all $(TESTS) clean
+.PRECIOUS: $(OBJ) $(TESTS_OBJ)
 
 all: $(TESTS_BIN)
 

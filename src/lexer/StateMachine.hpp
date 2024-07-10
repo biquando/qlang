@@ -1,0 +1,15 @@
+#pragma once
+
+#include "Node.hpp"
+#include "State.hpp"
+#include <memory>
+#include <vector>
+
+struct StateMachine {
+  public:
+    StateMachine(std::unique_ptr<Node> n);
+    int transition(int state, char c) const;
+
+  private:
+    std::vector<std::shared_ptr<State>> states;
+};

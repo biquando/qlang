@@ -62,7 +62,7 @@ BasedOnStyle:  LLVM
 # BinPackArguments: true
 # BinPackParameters: true
 # BitFieldColonSpacing: Both
-# BraceWrapping:
+BraceWrapping:
 #   AfterCaseLabel:  false
 #   AfterClass:      false
 #   AfterControlStatement: Never
@@ -78,9 +78,9 @@ BasedOnStyle:  LLVM
 #   BeforeLambdaBody: false
 #   BeforeWhile:     false
 #   IndentBraces:    false
-#   SplitEmptyFunction: true
-#   SplitEmptyRecord: true
-#   SplitEmptyNamespace: true
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
 # BreakAdjacentStringLiterals: true
 # BreakAfterAttributes: Leave
 # BreakAfterJavaFieldAnnotations: false

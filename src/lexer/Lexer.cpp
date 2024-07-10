@@ -62,8 +62,17 @@ std::vector<std::unique_ptr<Token>> Lexer::tokenize(FILE *fd)
             if (firstAcceptedState < 0) {
                 // FIXME: push this error up
                 std::cerr << "Unexpected character at line " << loc.line
-                          << " col " << loc.col << ": "
-                          << ((c == EOF) ? "EOF" : std::string(1, c)) << "\n";
+                          << " col " << loc.col << ": ";
+                if (c == EOF) {
+                    std::cerr << "EOF";
+                }
+                else if (isprint(c)) {
+                    std::cerr << "\'" << (char)c << "\'";
+                }
+                else {
+                    std::cerr << "0x" << std::hex << (int)c << std::dec;
+                }
+                std::cerr << "\n";
                 return tokens;
             }
             else {
@@ -80,6 +89,10 @@ std::vector<std::unique_ptr<Token>> Lexer::tokenize(FILE *fd)
                 break;
             }
             continue;
+        }
+        if (c == EOF) {
+            std::cerr << "Unexpected EOF\n";
+            break;
         }
 
         currToken.push_back(c);

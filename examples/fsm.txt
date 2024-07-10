@@ -55,13 +55,13 @@ Observations:
 
 State {
     literal
-    list of edges (i.e. other states)
+    list of successors
     void addEdge(const State &other) {
-        edges.push_back(&other)
+        successors.push_back(&other)
     }
     State *transition(char c) {
         State *next = nullptr
-        for State *other in edges {
+        for State *other in successors {
             if other->matches(c) {
                 next = other
                 break
@@ -80,7 +80,7 @@ State {
             return c in []
         }
         if literal is epsilon {
-            for State *other in edges {
+            for State *other in successors {
                 if other->matches(c) {
                     return true
                 }
