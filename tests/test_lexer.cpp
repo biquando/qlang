@@ -30,17 +30,15 @@ struct HexToken : public Token {
 // Decimal:    [0-9]+
 // Hex:        0x[0-9a-fA-F]+
 // String:     \"([^"\\\n]|\\.)*\"
-// Whitespace: [ ]+
 
 int main(void)
 {
-    RegexParsing::debug = false;
     StateMachine dec(RegexParsing::toNode(R"([0-9]+)"));
     StateMachine hex(RegexParsing::toNode(R"(0x[0-9a-fA-F]+)"));
     StateMachine str(RegexParsing::toNode(R"(\"([^"\\\n]|\\.)*\")"));
-    StateMachine ws(RegexParsing::toNode(R"([ \r\n\t\v]+)"));
 
     Lexer l;
+    l.opts.ignoreWhitespace = true;
     l.addTokenType(
         [&dec](int s, char c) { return dec.transition(s, c); },
         [](std::string text) { return std::make_unique<DecimalToken>(text); });
@@ -50,13 +48,6 @@ int main(void)
     l.addTokenType(
         [&str](int s, char c) { return str.transition(s, c); },
         [](std::string text) { return std::make_unique<Token>(text); });
-    l.addTokenType([&ws](int s, char c) { return ws.transition(s, c); },
-                   [](std::string) { return nullptr; });
-
-    // StateMachine test(RegexParsing::toNode(R"(ab*c)"));
-    // l.addTokenType(
-    //     [&test](int s, char c) { return test.transition(s, c); },
-    //     [](std::string text) { return std::make_unique<StringToken>(text); });
 
     std::vector<std::unique_ptr<Token>> tokens = l.tokenize(stdin);
     std::cout << "\n=== TOKENS (" << tokens.size() << ") ===\n";

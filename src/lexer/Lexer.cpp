@@ -1,5 +1,7 @@
 #include "Lexer.hpp"
+#include "RegexParsing.hpp"
 #include "State.hpp"
+#include "StateMachine.hpp"
 #include "Token.hpp"
 #include <functional>
 #include <iostream>
@@ -37,11 +39,21 @@ std::pair<bool, int> Lexer::transitionStates(std::vector<int> &states, char c)
     return std::pair<bool, int>(stillMatching, firstAcceptedState);
 }
 
+void Lexer::handleOptions()
+{
+    if (opts.ignoreWhitespace) {
+        StateMachine ws(RegexParsing::toNode(R"([ \r\n\t\v]+)"));
+        addTokenType([ws](int s, char c) { return ws.transition(s, c); },
+                     [](std::string) { return nullptr; });
+    }
+}
+
 std::vector<std::unique_ptr<Token>> Lexer::tokenize(FILE *fd)
 {
+    handleOptions();
     std::vector<std::unique_ptr<Token>> tokens;
     std::vector<char> currToken;
-    std::vector<int> states(numTokenTypes(), (int)State::Enter);
+    std::vector<int> states(transitionFns.size(), (int)State::Enter);
 
     std::function<void()> reset = [&currToken, &states]() {
         currToken.clear();

@@ -2,7 +2,6 @@
 
 #include <functional>
 #include <memory>
-#include <unordered_set>
 #include <vector>
 
 class State {
@@ -37,12 +36,6 @@ struct CharState : public State {
     char literal;
     CharState(char literal) : literal(literal) {}
     virtual bool matches(char c) const override { return c == literal; }
-};
-
-struct CharsetState : public State {
-    std::unordered_set<char> literal;
-    CharsetState(std::unordered_set<char> literal) : literal(literal) {}
-    virtual bool matches(char c) const override { return literal.count(c); }
 };
 
 struct PredState : public State {

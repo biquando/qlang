@@ -167,7 +167,7 @@ bool RegexParsing::validate(const std::vector<int> &tokens)
 {
     // empty expression
     if (tokens.size() == 0) {
-        DBG << "Validation failed: nonempty\n";
+        DBG << "Validation failed: empty\n";
         return false;
     }
 

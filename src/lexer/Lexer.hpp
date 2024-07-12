@@ -7,7 +7,10 @@
 class Lexer {
   public:
     Lexer() = default;
-    std::vector<std::unique_ptr<Token>> tokenize(FILE *fd);
+
+    struct {
+        bool ignoreWhitespace = false;
+    } opts;
 
     inline void addTokenType(
         std::function<int(int, char)> transitionFn,
@@ -17,11 +20,12 @@ class Lexer {
         constructorFns.push_back(constructorFn);
     }
 
-    inline int numTokenTypes() const { return transitionFns.size(); }
+    std::vector<std::unique_ptr<Token>> tokenize(FILE *fd);
 
   private:
     int nextChar(FILE *fd);
     std::pair<bool, int> transitionStates(std::vector<int> &states, char c);
+    void handleOptions();
 
     std::vector<std::function<int(int, char)>> transitionFns;
     std::vector<std::function<std::unique_ptr<Token>(std::string)>>
