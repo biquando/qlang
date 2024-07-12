@@ -163,7 +163,6 @@ static bool equalsSpecial(int token, char c)
  *     - don't need to check that -'-' are only in [] because the tokenizer
  *       takes care of that, and [] are checked to be matched earlier
  */
-// TODO: error messages
 bool RegexParsing::validate(const std::vector<int> &tokens)
 {
     // empty expression
@@ -353,7 +352,6 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
         auto inner = std::vector<int>(tokens.begin() + 1, tokens.end() - 1);
         DBG << "Wrapped: inner=" << tokensToString(inner) << "\n";
         Pattern p(inner);
-        // *this = p;
         type = p.type;
         switch (type) {
         case Char:

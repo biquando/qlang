@@ -17,6 +17,7 @@ struct Node {
 struct LiteralNode : Node {
     LiteralNode(std::shared_ptr<State> s);
     virtual void connect() override;
+    virtual void print(std::ostream &o) const override;
 };
 
 struct ConcatNode : Node {
@@ -24,6 +25,7 @@ struct ConcatNode : Node {
     std::unique_ptr<Node> right;
     ConcatNode(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
     virtual void connect() override;
+    virtual void print(std::ostream &o) const override;
 };
 
 struct AlternateNode : Node {
@@ -31,16 +33,19 @@ struct AlternateNode : Node {
     std::unique_ptr<Node> right;
     AlternateNode(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
     virtual void connect() override;
+    virtual void print(std::ostream &o) const override;
 };
 
 struct PlusNode : Node {
     std::unique_ptr<Node> opr;
     PlusNode(std::unique_ptr<Node> opr);
     virtual void connect() override;
+    virtual void print(std::ostream &o) const override;
 };
 
 struct StarNode : Node {
     std::unique_ptr<Node> opr;
     StarNode(std::unique_ptr<Node> opr);
     virtual void connect() override;
+    virtual void print(std::ostream &o) const override;
 };

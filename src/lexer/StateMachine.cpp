@@ -31,7 +31,7 @@ StateMachine::StateMachine(std::unique_ptr<Node> n)
         x->addEdge(states[State::Accept]);
     }
     for (auto state : states) {
-        state->addEdge(states[State::Reject]);
+        state->setRejector(states[State::Reject]);
     }
 }
 

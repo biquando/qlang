@@ -27,15 +27,6 @@ struct HexToken : public Token {
     }
 };
 
-struct StringToken : public Token {
-    // TODO: parse string (handle quotes and escape characters)
-    StringToken(std::string text) : Token(text) {}
-    void print(std::ostream &o) const override
-    {
-        o << "StringToken(" << text << ")";
-    }
-};
-
 // Decimal:    [0-9]+
 // Hex:        0x[0-9a-fA-F]+
 // String:     \"([^"\\\n]|\\.)*\"
@@ -58,12 +49,17 @@ int main(void)
         [](std::string text) { return std::make_unique<HexToken>(text); });
     l.addTokenType(
         [&str](int s, char c) { return str.transition(s, c); },
-        [](std::string text) { return std::make_unique<StringToken>(text); });
+        [](std::string text) { return std::make_unique<Token>(text); });
     l.addTokenType([&ws](int s, char c) { return ws.transition(s, c); },
                    [](std::string) { return nullptr; });
 
+    // StateMachine test(RegexParsing::toNode(R"(ab*c)"));
+    // l.addTokenType(
+    //     [&test](int s, char c) { return test.transition(s, c); },
+    //     [](std::string text) { return std::make_unique<StringToken>(text); });
+
     std::vector<std::unique_ptr<Token>> tokens = l.tokenize(stdin);
-    std::cout << "=== TOKENS (" << tokens.size() << ") ===\n";
+    std::cout << "\n=== TOKENS (" << tokens.size() << ") ===\n";
     for (auto &token : tokens) {
         std::cout << *token << "\n";
     }

@@ -25,6 +25,12 @@ LiteralNode::LiteralNode(std::shared_ptr<State> s)
 
 void LiteralNode::connect() {}
 
+void LiteralNode::print(std::ostream &o) const
+{
+    o << "LiteralNode[" << states.size() << "," << entry.size() << ","
+      << exit.size() << "]";
+}
+
 ConcatNode::ConcatNode(std::unique_ptr<Node> _left,
                        std::unique_ptr<Node> _right)
     : left(std::move(_left)), right(std::move(_right))
@@ -52,6 +58,12 @@ void ConcatNode::connect()
             lx->addEdge(re);
         }
     }
+}
+
+void ConcatNode::print(std::ostream &o) const
+{
+    o << "ConcatNode[" << states.size() << "," << entry.size() << ","
+      << exit.size() << "]";
 }
 
 AlternateNode::AlternateNode(std::unique_ptr<Node> _left,
@@ -82,6 +94,12 @@ AlternateNode::AlternateNode(std::unique_ptr<Node> _left,
 
 void AlternateNode::connect() {}
 
+void AlternateNode::print(std::ostream &o) const
+{
+    o << "AlternateNode[" << states.size() << "," << entry.size() << ","
+      << exit.size() << "]";
+}
+
 PlusNode::PlusNode(std::unique_ptr<Node> _opr) : opr(std::move(_opr))
 {
     states = opr->states;
@@ -97,6 +115,12 @@ void PlusNode::connect()
             x->addEdge(e);
         }
     }
+}
+
+void PlusNode::print(std::ostream &o) const
+{
+    o << "PlusNode[" << states.size() << "," << entry.size() << ","
+      << exit.size() << "]";
 }
 
 StarNode::StarNode(std::unique_ptr<Node> _opr) : opr(std::move(_opr))
@@ -120,4 +144,10 @@ void StarNode::connect()
             x->addEdge(e);
         }
     }
+}
+
+void StarNode::print(std::ostream &o) const
+{
+    o << "StarNode[" << states.size() << "," << entry.size() << ","
+      << exit.size() << "]";
 }

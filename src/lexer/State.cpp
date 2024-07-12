@@ -1,5 +1,28 @@
 #include "State.hpp"
+#include <cassert>
+#include <iostream>
 #include <memory>
+
+std::ostream &operator<<(std::ostream &o, const State &n)
+{
+    n.print(o);
+    return o;
+}
+
+void State::print(std::ostream &o) const
+{
+    o << "State(\n  id:     " << id << "\n";
+    o << "  succ:  ";
+    for (auto succ : successors) {
+        o << " " << succ->id;
+    }
+    o << "\n";
+    o << "  epSucc:";
+    for (auto succ : epsilonSuccessors) {
+        o << " " << succ->id;
+    }
+    o << "\n)";
+}
 
 void State::addEdge(std::shared_ptr<State> other)
 {
@@ -25,6 +48,7 @@ std::shared_ptr<State> State::transition(char c) const
     }
 
     for (std::shared_ptr<State> other : epsilonSuccessors) {
+        assert(other->isEpsilon());
         if (other->matches(c)) {
             next = other;
             break;
@@ -34,7 +58,7 @@ std::shared_ptr<State> State::transition(char c) const
         return next->transition(c);
     }
 
-    return nullptr;
+    return rejector;
 }
 
 // Other match functions are in header file
