@@ -19,8 +19,6 @@ StateMachine::StateMachine(std::unique_ptr<Node> n)
     // Reject
     states.push_back(std::make_unique<PredState>([](char) { return true; }));
     states[State::Reject]->id = State::Reject;
-    // states[State::Accept]->addEdge(states[State::Reject]);
-    // states[State::Reject]->addEdge(states[State::Reject]);
 
     for (auto state : n->states) {
         state->id = states.size();

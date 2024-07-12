@@ -1,6 +1,5 @@
 #include "lexer/Lexer.hpp"
-#include "lexer/Node.hpp"
-#include "lexer/State.hpp"
+#include "lexer/RegexParsing.hpp"
 #include "lexer/StateMachine.hpp"
 #include "lexer/Token.hpp"
 #include <cctype>
@@ -44,32 +43,11 @@ struct StringToken : public Token {
 
 int main(void)
 {
-    // Construct state machines
-    StateMachine dec(std::make_unique<PlusNode>(std::make_unique<LiteralNode>(
-        std::make_unique<PredState>([](char c) { return isnumber(c); }))));
-    StateMachine hex(std::make_unique<ConcatNode>(
-        std::make_unique<ConcatNode>(
-            std::make_unique<LiteralNode>(std::make_shared<CharState>('0')),
-            std::make_unique<LiteralNode>(std::make_shared<CharState>('x'))),
-        std::make_unique<PlusNode>(
-            std::make_unique<LiteralNode>(std::make_shared<PredState>(
-                [](char c) { return ishexnumber(c); })))));
-    StateMachine str(std::make_unique<ConcatNode>(
-        std::make_unique<ConcatNode>(
-            std::make_unique<LiteralNode>(std::make_shared<CharState>('\"')),
-            std::make_unique<StarNode>(std::make_unique<AlternateNode>(
-                std::make_unique<LiteralNode>(
-                    std::make_shared<PredState>([](char c) {
-                        return c != EOF && c != '\"' && c != '\\' && c != '\n';
-                    })),
-                std::make_unique<ConcatNode>(
-                    std::make_unique<LiteralNode>(
-                        std::make_shared<CharState>('\\')),
-                    std::make_unique<LiteralNode>(std::make_shared<PredState>(
-                        [](char c) { return c != EOF && c != '\n'; })))))),
-        std::make_unique<LiteralNode>(std::make_shared<CharState>('\"'))));
-    StateMachine ws(std::make_unique<PlusNode>(std::make_unique<LiteralNode>(
-        std::make_unique<PredState>([](char c) { return isspace(c); }))));
+    RegexParsing::debug = false;
+    StateMachine dec(RegexParsing::toNode(R"([0-9]+)"));
+    StateMachine hex(RegexParsing::toNode(R"(0x[0-9a-fA-F]+)"));
+    StateMachine str(RegexParsing::toNode(R"(\"([^"\\\n]|\\.)*\")"));
+    StateMachine ws(RegexParsing::toNode(R"([ \r\n\t\v]+)"));
 
     Lexer l;
     l.addTokenType(
@@ -83,10 +61,6 @@ int main(void)
         [](std::string text) { return std::make_unique<StringToken>(text); });
     l.addTokenType([&ws](int s, char c) { return ws.transition(s, c); },
                    [](std::string) { return nullptr; });
-    // l.addTokenType(
-    //     [&test](int s, char c) { return test.transition(s, c); },
-    //     [](std::string text) { return std::make_unique<StringToken>(text);
-    //     });
 
     std::vector<std::unique_ptr<Token>> tokens = l.tokenize(stdin);
     std::cout << "=== TOKENS (" << tokens.size() << ") ===\n";

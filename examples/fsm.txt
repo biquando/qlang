@@ -181,3 +181,56 @@ entry(A*) = char(A) |-> entry(A)
 exit(A*) = exit(A)
 
 entry(A|B) = { char(A) |-> entry(A), char(B) |-> entry(B) }
+
+
+
+
+# Parsing regex
+
+1. tokenize
+2. validate
+3. decompose
+
+validation:
+- nonempty
+- matching () and []
+- alternation has something on each side
+- on the left side of alternation: literal or -)].*+
+- on the right side of alternation: literal or -([.
+- plus/star comes after a literal or -)].
+- valid ranges for -'-' in []
+    - for each -'-' at idx i
+        - check for literals at i-1 and i+1
+        - check that i+2 is not -'-'
+    - don't need to check that -'-' are only in [] because the tokenizer takes
+      care of that, and [] are checked to be matched earlier
+
+precedence:
+- plus/star
+- concat
+- alternation
+
+decomposition:
+- if everything is wrapped in ()
+    - unwrap recursively
+    - to check for this, check that the depth is only zero at the beginning/end
+- check for alternation
+    - if there is a -'|' outside of parentheses
+- check for concatenation
+    - depth := 0
+    - nPieces := 0
+    - for each char c
+        - if c == -'('
+            - depth++
+        - if c == -')'
+            - depth--
+        - if depth == 0
+            - nPieces++
+        - if nPieces > 1
+            - return true // this also gives us the boundary between pieces
+- check for plus/star
+    - if the last char is a -plus/star
+- check for charchoice
+    - first char is -'['
+- check for char
+    - assert the only char is a literal or -'.'
