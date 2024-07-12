@@ -16,7 +16,15 @@ bool validate(const std::vector<int> &tokens);
 std::string tokensToString(const std::vector<int> &tokens);
 
 struct Pattern {
-    enum Type { Char, CharChoice, Concat, Alternate, Plus, Star } type;
+    enum Type {
+        Char,
+        CharChoice,
+        Concat,
+        Alternate,
+        Plus,
+        Star,
+        Optional
+    } type;
 
     char literalChar = 0;
     std::function<bool(char)> charChoicePred;

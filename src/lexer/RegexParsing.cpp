@@ -123,18 +123,20 @@ std::vector<int> RegexParsing::tokenize(const std::string text)
         // case '$':
         // case '<':
         // case '>':
-        // case '?':
         // case '/':
         // case '{':
         // case '}':
-        case ']':
-        case '.':
-        case '*':
-        case '+':
-        case '|':
         case '(':
         case ')':
+        case ']':
+        case '.':
+        case '|':
+        case '+':
+        case '*':
+        case '?':
             addSpecial(tokens, c);
+            break;
+        case ' ':
             break;
         default:
             addLiteral(tokens, c);
@@ -153,9 +155,9 @@ static bool equalsSpecial(int token, char c)
 /* validation:
  * - nonempty
  * - matching () and []
- * - on the left side of alternation: literal or -)].*+
+ * - on the left side of alternation: literal or -)].*+?
  * - on the right side of alternation: literal or -([.
- * - plus/star comes after a literal or -)].
+ * - plus/star/opt comes after a literal or -)].
  * - valid ranges for -'-' in []
  *     - for each -'-' at idx i
  *         - check for literals at i-1 and i+1
@@ -227,7 +229,8 @@ bool RegexParsing::validate(const std::vector<int> &tokens)
               equalsSpecial(tokens[i - 1], ']') ||
               equalsSpecial(tokens[i - 1], '.') ||
               equalsSpecial(tokens[i - 1], '+') ||
-              equalsSpecial(tokens[i - 1], '*'))) {
+              equalsSpecial(tokens[i - 1], '*') ||
+              equalsSpecial(tokens[i - 1], '?'))) {
             DBG << "Validation failed: Invalid left side of |\n";
             return false;
         }
@@ -239,19 +242,21 @@ bool RegexParsing::validate(const std::vector<int> &tokens)
         }
     }
 
-    // plus/star comes after a literal or -)].
-    if (equalsSpecial(tokens[0], '+') || equalsSpecial(tokens[0], '*')) {
-        DBG << "Validation failed: + or * at beginning\n";
+    // plus/star/opt comes after a literal or -)].
+    if (equalsSpecial(tokens[0], '+') || equalsSpecial(tokens[0], '*') ||
+        equalsSpecial(tokens[0], '?')) {
+        DBG << "Validation failed: + or * or ? at beginning\n";
         return false;
     }
     for (unsigned i = 1; i < tokens.size(); i++) {
-        if (!equalsSpecial(tokens[i], '+') && !equalsSpecial(tokens[i], '*')) {
+        if (!equalsSpecial(tokens[i], '+') && !equalsSpecial(tokens[i], '*') &&
+            !equalsSpecial(tokens[i], '*')) {
             continue;
         }
         if (!(tokens[i - 1] > 0 || equalsSpecial(tokens[i - 1], ')') ||
               equalsSpecial(tokens[i - 1], ']') ||
               equalsSpecial(tokens[i - 1], '.'))) {
-            DBG << "Validation failed: Invalid left side of + or *\n";
+            DBG << "Validation failed: Invalid left side of + or * or ?\n";
             return false;
         }
     }
@@ -316,8 +321,8 @@ std::string RegexParsing::tokensToString(const std::vector<int> &tokens)
  *             - nPieces++
  *         - if nPieces > 1 and c != -'+' or -'*'
  *             - return true // this also gives us the boundary between pieces
- * - check for plus/star
- *     - if the last char is a -plus/star
+ * - check for plus/star/opt
+ *     - if the last char is a -plus/star/opt
  * - check for charchoice
  *     - first char is -'['
  * - check for char
@@ -365,6 +370,7 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
             opr2 = std::move(p.opr2);
         case Plus:
         case Star:
+        case Optional:
             opr1 = std::move(p.opr1);
             break;
         }
@@ -397,7 +403,8 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
     int nPieces = 0;
     for (unsigned i = 0; i < tokens.size(); i++) {
         if (depth == 0 && !equalsSpecial(tokens[i], '+') &&
-            !equalsSpecial(tokens[i], '*')) {
+            !equalsSpecial(tokens[i], '+') && !equalsSpecial(tokens[i], '*') &&
+            !equalsSpecial(tokens[i], '?')) {
             nPieces++;
         }
         if (equalsSpecial(tokens[i], '(') || equalsSpecial(tokens[i], '[')) {
@@ -419,7 +426,7 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
         }
     }
 
-    // check for plus/star
+    // check for plus/star/opt
     if (equalsSpecial(tokens[tokens.size() - 1], '+')) {
         auto inner = std::vector<int>(tokens.begin(), tokens.end() - 1);
         DBG << "Plus: inner=" << tokensToString(inner) << "\n";
@@ -431,6 +438,13 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
         auto inner = std::vector<int>(tokens.begin(), tokens.end() - 1);
         DBG << "Star: inner=" << tokensToString(inner) << "\n";
         type = Star;
+        opr1 = std::make_unique<Pattern>(inner);
+        return;
+    }
+    if (equalsSpecial(tokens[tokens.size() - 1], '?')) {
+        auto inner = std::vector<int>(tokens.begin(), tokens.end() - 1);
+        DBG << "Optional: inner=" << tokensToString(inner) << "\n";
+        type = Optional;
         opr1 = std::make_unique<Pattern>(inner);
         return;
     }
@@ -538,6 +552,9 @@ std::unique_ptr<Node> RegexParsing::toNode(std::shared_ptr<Pattern> p)
     case Pattern::Star:
         DBG << "toNode: Star\n";
         return std::make_unique<StarNode>(toNode(p->opr1));
+    case Pattern::Optional:
+        DBG << "toNode: Optional\n";
+        return std::make_unique<OptionalNode>(toNode(p->opr1));
     }
 }
 

@@ -49,3 +49,10 @@ struct StarNode : Node {
     virtual void connect() override;
     virtual void print(std::ostream &o) const override;
 };
+
+struct OptionalNode : Node {
+    std::unique_ptr<Node> opr;
+    OptionalNode(std::unique_ptr<Node> opr);
+    virtual void connect() override;
+    virtual void print(std::ostream &o) const override;
+};

@@ -151,3 +151,25 @@ void StarNode::print(std::ostream &o) const
     o << "StarNode[" << states.size() << "," << entry.size() << ","
       << exit.size() << "]";
 }
+
+OptionalNode::OptionalNode(std::unique_ptr<Node> _opr) : opr(std::move(_opr))
+{
+    states = opr->states;
+    entry = opr->entry;
+    exit = opr->exit;
+
+    std::shared_ptr<EpsilonState> epsilon = std::make_shared<EpsilonState>();
+    states.push_back(epsilon);
+    entry.push_back(epsilon);
+    exit.push_back(epsilon);
+
+    connect();
+}
+
+void OptionalNode::connect() {}
+
+void OptionalNode::print(std::ostream &o) const
+{
+    o << "OptionalNode[" << states.size() << "," << entry.size() << ","
+      << exit.size() << "]";
+}

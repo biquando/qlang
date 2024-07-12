@@ -7,7 +7,7 @@
 #include <memory>
 
 struct DecimalToken : public Token {
-    unsigned long val;
+    long val;
     DecimalToken(std::string text) : Token(text), val(std::stol(text)) {}
     void print(std::ostream &o) const override
     {
@@ -16,10 +16,18 @@ struct DecimalToken : public Token {
 };
 
 struct HexToken : public Token {
-    unsigned long val;
-    HexToken(std::string text)
-        : Token(text), val(std::stol(text.substr(2), nullptr, 16))
+    long val;
+    HexToken(std::string text) : Token(text)
     {
+        if (text[0] == '+') {
+            val = std::stol(text.substr(3), nullptr, 16);
+        }
+        else if (text[0] == '-') {
+            val = -std::stol(text.substr(3), nullptr, 16);
+        }
+        else {
+            val = std::stol(text.substr(2), nullptr, 16);
+        }
     }
     void print(std::ostream &o) const override
     {
@@ -33,9 +41,10 @@ struct HexToken : public Token {
 
 int main(void)
 {
-    StateMachine dec(RegexParsing::toNode(R"([0-9]+)"));
-    StateMachine hex(RegexParsing::toNode(R"(0x[0-9a-fA-F]+)"));
-    StateMachine str(RegexParsing::toNode(R"(\"([^"\\\n]|\\.)*\")"));
+    // RegexParsing::debug = true;
+    StateMachine dec(RegexParsing::toNode(R"( [+\-]?[0-9]+ )"));
+    StateMachine hex(RegexParsing::toNode(R"( [+\-]?0x[0-9a-fA-F]+ )"));
+    StateMachine str(RegexParsing::toNode(R"( \"([^"\\\n]|\\.)*\" )"));
 
     Lexer l;
     l.opts.ignoreWhitespace = true;
