@@ -165,6 +165,7 @@ static bool equalsSpecial(int token, char c)
  *     - don't need to check that -'-' are only in [] because the tokenizer
  *       takes care of that, and [] are checked to be matched earlier
  */
+// TODO: check for non-determinism
 bool RegexParsing::validate(const std::vector<int> &tokens)
 {
     // empty expression

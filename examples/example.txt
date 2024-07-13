@@ -27,9 +27,47 @@ struct Student {
 namespace Student {
     avgScore: (students: [Student]) -> f32 {
         total: f32 = 0.0;
-        for (student in students) {
+        for student in students {
             total += student.score();
         }
-        return total / students.len;
+        return total / students.length;
     }
 }
+
+
+
+
+
+id opColon opLParen opRParen opArrow typeVoid opLBrace
+    kwLet id opColon id opEquals opLBrace
+        id opEquals litStr opComma
+        id opEquals litFloat opComma
+        id opEquals litFloat opComma
+    opRBrace opSemicolon
+
+    kwLet id opColon typeF32 opEquals id opDot id opLParen opLBracket id
+        id opComma id
+    opRBracket opRParen opSemicolon
+opRBrace
+
+kwStruct id opLBrace
+    id opColon opLBracket typeChar opRBracket opSemicolon
+    id opColon typeF32 opSemicolon
+    id opColon typeF32 opSemicolon
+
+    id opColon opLParen opRParen opArrow typeF32 opLBrace
+        kwReturn opLParen litFloat opStar id opRParen
+            opPlus opLParen litFloat opStar id opRParen opSemicolon
+    opRBrace
+opRBrace
+
+kwNamespace id opLBrace
+    id opColon opLParen id opColon opLBracket id opRBracket opRParen
+            opArrow typeF32 opLBrace
+        id opColon typeF32 opEquals litFloat opSemicolon
+        kwFor id kwIn id opLBrace
+            id opPlusEq id opDot id opLBrace opRBrace opSemicolon
+        opRBrace
+        kwReturn id opSlash id opDot kwLength opSemicolon
+    opRBrace
+opRBrace

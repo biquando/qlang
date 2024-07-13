@@ -1,13 +1,51 @@
+#pragma once
+
 #include "Lexer.hpp"
 #include "RegexParsing.hpp"
 #include "State.hpp"
 #include "StateMachine.hpp"
-#include "Token.hpp"
 #include <functional>
 #include <iostream>
+#include <string>
 #include <vector>
 
-int Lexer::nextChar(FILE *fd)
+template <typename Token>
+void Lexer<Token>::addTokenType(
+    std::function<int(int, char)> transitionFn,
+    std::function<std::unique_ptr<Token>(std::string)> constructorFn)
+{
+    transitionFns.push_back(transitionFn);
+    constructorFns.push_back(constructorFn);
+}
+
+template <typename Token>
+template <typename SubToken>
+void Lexer<Token>::addTokenType(std::function<int(int, char)> transitionFn)
+{
+    transitionFns.push_back(transitionFn);
+    constructorFns.push_back(
+        [](std::string text) { return std::make_unique<SubToken>(text); });
+}
+
+template <typename Token>
+template <typename SubToken>
+void Lexer<Token>::addTokenType(std::string regex)
+{
+    StateMachine sm(RegexParsing::toNode(regex));
+    transitionFns.push_back(
+        [sm](int s, char c) { return sm.transition(s, c); });
+    constructorFns.push_back(
+        [](std::string text) { return std::make_unique<SubToken>(text); });
+}
+
+template <typename Token>
+void Lexer<Token>::addTokenType(std::string regex)
+{
+    addTokenType<Token>(regex);
+}
+
+template <typename Token>
+int Lexer<Token>::nextChar(FILE *fd)
 {
     int c = fgetc(fd);
     if (c == '\n') {
@@ -20,7 +58,9 @@ int Lexer::nextChar(FILE *fd)
     return c;
 }
 
-std::pair<bool, int> Lexer::transitionStates(std::vector<int> &states, char c)
+template <typename Token>
+std::pair<bool, int> Lexer<Token>::transitionStates(std::vector<int> &states,
+                                                    char c)
 {
     bool stillMatching = false;
     int firstAcceptedState = -1;
@@ -39,7 +79,8 @@ std::pair<bool, int> Lexer::transitionStates(std::vector<int> &states, char c)
     return std::pair<bool, int>(stillMatching, firstAcceptedState);
 }
 
-void Lexer::handleOptions()
+template <typename Token>
+void Lexer<Token>::handleOptions()
 {
     if (opts.ignoreWhitespace) {
         StateMachine ws(RegexParsing::toNode(R"([ \r\n\t\v]+)"));
@@ -48,7 +89,8 @@ void Lexer::handleOptions()
     }
 }
 
-std::vector<std::unique_ptr<Token>> Lexer::tokenize(FILE *fd)
+template <typename Token>
+std::vector<std::unique_ptr<Token>> Lexer<Token>::tokenize(FILE *fd)
 {
     handleOptions();
     std::vector<std::unique_ptr<Token>> tokens;
@@ -72,14 +114,14 @@ std::vector<std::unique_ptr<Token>> Lexer::tokenize(FILE *fd)
 
         if (!stillMatching) {
             if (firstAcceptedState < 0) {
-                // FIXME: push this error up
+                // TODO: push this error up
                 std::cerr << "Unexpected character at line " << loc.line
                           << " col " << loc.col << ": ";
                 if (c == EOF) {
                     std::cerr << "EOF";
                 }
                 else if (isprint(c)) {
-                    std::cerr << "\'" << (char)c << "\'";
+                    std::cerr << "`" << (char)c << "`";
                 }
                 else {
                     std::cerr << "0x" << std::hex << (int)c << std::dec;
@@ -113,3 +155,5 @@ std::vector<std::unique_ptr<Token>> Lexer::tokenize(FILE *fd)
 
     return tokens;
 }
+
+// vim:ft=cpp

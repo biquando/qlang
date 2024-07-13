@@ -1,9 +1,10 @@
 #pragma once
 
-#include "Token.hpp"
 #include <functional>
+#include <string>
 #include <vector>
 
+template <typename Token>
 class Lexer {
   public:
     Lexer() = default;
@@ -12,13 +13,17 @@ class Lexer {
         bool ignoreWhitespace = false;
     } opts;
 
-    inline void addTokenType(
+    void addTokenType(
         std::function<int(int, char)> transitionFn,
-        std::function<std::unique_ptr<Token>(std::string)> constructorFn)
-    {
-        transitionFns.push_back(transitionFn);
-        constructorFns.push_back(constructorFn);
-    }
+        std::function<std::unique_ptr<Token>(std::string)> constructorFn);
+
+    template <typename SubToken>
+    void addTokenType(std::function<int(int, char)> transitionFn);
+
+    template <typename SubToken>
+    void addTokenType(std::string regex);
+
+    void addTokenType(std::string regex);
 
     std::vector<std::unique_ptr<Token>> tokenize(FILE *fd);
 
@@ -35,3 +40,5 @@ class Lexer {
         unsigned long col = 0;
     } loc;
 };
+
+#include "Lexer.tpp"
