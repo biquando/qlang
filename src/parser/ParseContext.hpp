@@ -20,10 +20,12 @@ class ParseContext {
     std::unique_ptr<Token> eat(Token::Id t);
     std::unique_ptr<Token> eat(char c);
     std::unique_ptr<Token> eat(std::string s);
-    void error();
+    void error(std::string msg = "");
 
   private:
     std::vector<std::unique_ptr<Token>> &tokens;
+    std::unique_ptr<Token> eatGeneric(bool validToken,
+                                      std::string expectedToken = "");
     std::unique_ptr<Token> nextToken();
 };
 

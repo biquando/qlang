@@ -33,7 +33,7 @@ int main()
     //    ->
     Production g("g");
     Production g1("g1");
-    Production s("s");
+    Production s;
     Production s1("s1");
     Production l("l");
     Production l1("l1");
@@ -69,8 +69,7 @@ int main()
     ParseContext ctx(tokens);
 
     Production::debug = true;
-    Production::Node n = g.produce(ctx);
-    assert(ctx.token == nullptr); // check that there are no remaining tokens
+    Production::Node n = g.produce(ctx, true);
 
     std::cout << n << "\n";
 }

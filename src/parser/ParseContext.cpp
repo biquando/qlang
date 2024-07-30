@@ -1,64 +1,62 @@
 #include "ParseContext.hpp"
+#include "ParseException.hpp"
 #include "Token.hpp"
-#include <iostream>
 #include <memory>
+#include <sstream>
 #include <string>
 
 using parser::ParseContext;
 using parser::Token;
 
-std::unique_ptr<Token> ParseContext::eat(Token::Id t)
+std::unique_ptr<Token> ParseContext::eatGeneric(bool tokenIsValid,
+                                                std::string expectedToken)
 {
-    if (token && token->id() == t) {
+    if (tokenIsValid) {
         auto tok = std::move(token);
         token = nextToken();
         return tok;
     }
     else {
+        if (!expectedToken.empty()) {
+            error("Expected " + expectedToken);
+            return nullptr;
+        }
         error();
         return nullptr;
     }
+}
+
+std::unique_ptr<Token> ParseContext::eat(Token::Id t)
+{
+    return eatGeneric(token && token->id() == t,
+                      "Token::Id=" + std::to_string(t));
 }
 
 std::unique_ptr<Token> ParseContext::eat(char c)
 {
-    if (token && token->text.size() == 1 && token->text[0] == c) {
-        auto tok = std::move(token);
-        token = nextToken();
-        return tok;
-    }
-    else {
-        error();
-        return nullptr;
-    }
+    return eatGeneric(token && token->text.size() == 1 && token->text[0] == c,
+                      "'" + std::string(1, c) + "'");
 }
 
 std::unique_ptr<Token> ParseContext::eat(std::string s)
 {
-    if (token && token->text == s) {
-        auto tok = std::move(token);
-        token = nextToken();
-        return tok;
-    }
-    else {
-        error();
-        return nullptr;
-    }
+    return eatGeneric(token && token->text == s, "\"" + s + "\"");
 }
 
-void ParseContext::error()
+void ParseContext::error(std::string msg)
 {
-    // TODO: proper error handling
-    std::cerr << "Parse error at token " << i << ": ";
+    std::stringstream ss;
     if (token) {
-        // TODO: maybe we can show the expected token if possible?
-        std::cerr << '\"' << token->text << '\"';
+        ss << "Found " << *token;
     }
     else {
-        std::cerr << "Expected more tokens";
+        ss << "Unexpected end of input";
     }
-    std::cerr << "\n";
-    std::exit(1);
+
+    if (!msg.empty()) {
+        ss << ": " + msg;
+    }
+    throw ParseException(i, ss.str());
 }
 
 std::unique_ptr<Token> ParseContext::nextToken()

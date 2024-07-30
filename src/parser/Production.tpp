@@ -4,6 +4,7 @@
 #include "Production.hpp"
 #include <cassert>
 #include <iostream>
+#include <sstream>
 #include <unordered_set>
 #include <variant>
 #include <vector>
@@ -119,17 +120,27 @@ bool shouldUseRule(const std::vector<parser::Production::Symbol> &rule,
     return ruleMatches;
 }
 
-parser::Production::Node parser::Production::produce(ParseContext &ctx)
+static void checkGoal(parser::ParseContext &ctx, bool isGoal)
+{
+    if (isGoal && ctx.token) {
+        ctx.error("Expected end of input");
+    }
+}
+
+parser::Production::Node parser::Production::produce(ParseContext &ctx,
+                                                     bool isGoal)
 {
     static int debug_depth = -1;
     debug_depth++;
     IndentedStream ios(std::cerr, debug_depth * 4);
     DBG_OS(ios) << "Producing " << *this << "\n";
+
     std::vector<Node> children;
     for (std::vector<Symbol> &rule : rules) {
         if (rule.empty()) {
             DBG_OS(ios) << "(epsilon)\n";
             debug_depth--;
+            checkGoal(ctx, isGoal);
             return Epsilon();
         }
 
@@ -164,6 +175,7 @@ parser::Production::Node parser::Production::produce(ParseContext &ctx)
         }
         debug_depth--;
         assert(!children.empty());
+        checkGoal(ctx, isGoal);
         if (children.size() == 1) {
             return std::move(children.at(0));
         }
@@ -171,8 +183,12 @@ parser::Production::Node parser::Production::produce(ParseContext &ctx)
             return NonTerminal{std::move(children)};
         }
     }
-    ctx.error();
+
+    std::stringstream ss;
+    ss << "No rule in " << *this << " that matches token";
+    ctx.error(ss.str());
     debug_depth--;
+    checkGoal(ctx, isGoal);
     return Epsilon();
 }
 
