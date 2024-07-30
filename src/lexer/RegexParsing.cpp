@@ -458,7 +458,7 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
         if (equalsSpecial(inner[0], '^')) {
             DBG << "Inverted choice\n";
             charChoicePred = [inner](char c) {
-                if (c == EOF || c == '\n') {
+                if (c == EOF) {
                     return false;
                 }
                 for (unsigned i = 1; i < inner.size(); i++) {

@@ -4,3 +4,4 @@ compile_commands.json
 tests/test-*
 .cache
 .DS_STORE
+.vscode/

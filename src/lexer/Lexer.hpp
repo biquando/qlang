@@ -17,6 +17,10 @@ class Lexer {
         std::function<int(int, char)> transitionFn,
         std::function<std::unique_ptr<Token>(std::string)> constructorFn);
 
+    void addTokenType(
+        std::string regex,
+        std::function<std::unique_ptr<Token>(std::string)> constructorFn);
+
     template <typename SubToken>
     void addTokenType(std::function<int(int, char)> transitionFn);
 
@@ -41,4 +45,4 @@ class Lexer {
     } loc;
 };
 
-#include "Lexer.tpp"
+#include "Lexer.tpp" // IWYU pragma: keep

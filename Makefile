@@ -2,7 +2,7 @@ CC = clang++
 LD = clang++
 CPPFLAGS := $(CPPFLAGS) --std=c++17 -Wall -Wextra -pedantic -Isrc -g -O0
 
-SRC = $(wildcard src/*.cpp) $(wildcard src/lexer/*.cpp)
+SRC = $(wildcard src/*.cpp) $(wildcard src/lexer/*.cpp) $(wildcard src/parser/*.cpp)
 OBJ = $(SRC:.cpp=.o)
 DEP = $(SRC:.cpp=.d)
 

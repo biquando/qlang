@@ -19,6 +19,17 @@ void Lexer<Token>::addTokenType(
 }
 
 template <typename Token>
+void Lexer<Token>::addTokenType(
+    std::string regex,
+    std::function<std::unique_ptr<Token>(std::string)> constructorFn)
+{
+    StateMachine sm(RegexParsing::toNode(regex));
+    transitionFns.push_back(
+        [sm](int s, char c) { return sm.transition(s, c); });
+    constructorFns.push_back(constructorFn);
+}
+
+template <typename Token>
 template <typename SubToken>
 void Lexer<Token>::addTokenType(std::function<int(int, char)> transitionFn)
 {

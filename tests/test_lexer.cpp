@@ -43,10 +43,13 @@ int main(void)
 {
     Lexer<Token> l;
     l.opts.ignoreWhitespace = true;
-    l.addTokenType<DecimalToken>(R"( [+\-]?[0-9]+ )");
-    l.addTokenType<HexToken>(R"( [+\-]?0x[0-9a-fA-F]+ )");
+    l.addTokenType<DecimalToken>(R"( [0-9]+ )");
+    l.addTokenType<HexToken>(R"( 0x[0-9a-fA-F]+ )");
     l.addTokenType(R"( \"([^"\\]|\\.)*\" )");
     l.addTokenType(R"( \'([^'\\]|\\.)\' )");
+    l.addTokenType(R"(\/\/.*)", [](std::string) { return nullptr; });
+    l.addTokenType(R"(\/\*[^*]*\*+([^/*][^*]*\*+)*\/)",
+                   [](std::string) { return nullptr; });
 
     std::vector<std::unique_ptr<Token>> tokens = l.tokenize(stdin);
     std::cout << "\n=== TOKENS (" << tokens.size() << ") ===\n";

@@ -1,0 +1,111 @@
+// vim:syntax=cpp
+
+ParseContext {
+public:
+    int token;
+    int nextToken();
+    void eat(int t);
+    void error();
+}
+
+Node {}
+
+Terminal : Node {
+    Token literal;
+}
+
+NonTerminal : Node {
+    vector<Node> children;
+}
+
+Production {
+    bool nullable() {
+        for vector<Symbol> rule : rules {
+            if rule is empty {
+                return true
+            }
+
+            bool containsNonNullableSymbol = false
+            for (symbol : rule) {
+                if symbol is Production* {
+                    if !symbol->nullable() {
+                        containsNonNullableSymbol = true
+                        break
+                    }
+                } else {
+                    containsNonNullableSymbol = true
+                    break
+                }
+            }
+            if !containsNonNullableSymbol {
+                return true
+            }
+        }
+        return false
+    }
+
+    set<Symbol> firstSet() {
+        set<Symbol> firsts;
+        for vector<Symbol> rule : rules {
+            for symbol : rule {
+                if symbol is Production* {
+                    for s : symbol->firstSet() {
+                        firsts.add(s)
+                    }
+                    if symbol->nullable() {
+                        continue
+                    }
+                }
+                break
+            }
+        }
+        return firsts
+    }
+}
+
+Production pG;
+Production pG1;
+Production pS;
+Production pS1;
+Production pL;
+Production pL1;
+
+pG.add({ 'i', pS, pG1 })
+pG1.add({ 'e', pS })
+pG1.add({})
+
+pS.add({ 's' })
+pS.add({ '{', pS1 })
+pS1.add({ pL, '}' })
+pS1.add({ '}' })
+
+pL.add({ 's', pL1 })
+pL1.add({ pL })
+pL1.add({})
+
+token matches symbol {
+    if symbol is char {
+        return text.size == 1 and text[0] == symbol
+    }
+    else if symbol is string {
+        return text == symbol
+    }
+    else {
+        
+    }
+}
+
+Node Production::produce(ctx) {
+    vector<Node> children;
+    for vector<Symbol> rule in rules:
+        if rule is empty: // epsilon
+            return
+        if rule.first() contains ctx.token:
+            for sym in rule:
+                if sym is terminal:
+                    children += ctx.eat(sym)
+                else:
+                    children += sym.produce(ctx)
+            return Node(children)
+    ctx.error()
+}
