@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+namespace parser {
+
 class ParseContext {
   public:
     std::unique_ptr<Token> token;
@@ -25,4 +27,4 @@ class ParseContext {
     std::unique_ptr<Token> nextToken();
 };
 
-#include "ParseContext.tpp" // IWYU pragma: keep
+} // namespace parser

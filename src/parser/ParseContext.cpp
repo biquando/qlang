@@ -1,10 +1,11 @@
-#pragma once
-
 #include "ParseContext.hpp"
 #include "Token.hpp"
 #include <iostream>
 #include <memory>
 #include <string>
+
+using parser::ParseContext;
+using parser::Token;
 
 std::unique_ptr<Token> ParseContext::eat(Token::Id t)
 {

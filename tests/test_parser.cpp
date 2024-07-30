@@ -6,9 +6,11 @@
 #include <memory>
 #include <vector>
 
+using namespace parser;
+
 struct TextToken : public Token {
     TextToken(std::string text) : Token(text) {}
-    Id id() override { return Token::id<TextToken>(); }
+    Token::Id id() override { return Token::id<TextToken>(); }
 };
 
 void addToken(std::vector<std::unique_ptr<Token>> &tokens, std::string text)

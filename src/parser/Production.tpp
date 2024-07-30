@@ -2,12 +2,13 @@
 
 #include "IndentedStream.hpp"
 #include "Production.hpp"
+#include <cassert>
 #include <iostream>
 #include <unordered_set>
 #include <variant>
 #include <vector>
 
-bool Production::debug = false;
+bool parser::Production::debug = false;
 #define DBG                                                                    \
     if (!Production::debug) {                                                  \
     }                                                                          \
@@ -19,12 +20,12 @@ bool Production::debug = false;
     else                                                                       \
         os
 
-void Production::add(std::initializer_list<Symbol> symbols)
+void parser::Production::add(std::initializer_list<Symbol> symbols)
 {
     rules.emplace_back(symbols.begin(), symbols.end());
 }
 
-bool Production::nullable() const
+bool parser::Production::nullable() const
 {
     for (const std::vector<Symbol> &rule : rules) {
         if (rule.empty()) {
@@ -51,9 +52,10 @@ bool Production::nullable() const
     return false;
 }
 
-static std::unordered_set<Production::Symbol>
-ruleFirst(std::vector<Production::Symbol> rule)
+static std::unordered_set<parser::Production::Symbol>
+ruleFirst(std::vector<parser::Production::Symbol> rule)
 {
+    using namespace parser;
     std::unordered_set<Production::Symbol> firstSet;
     for (const Production::Symbol &symbol : rule) {
         if (std::holds_alternative<Production *>(symbol)) {
@@ -73,7 +75,7 @@ ruleFirst(std::vector<Production::Symbol> rule)
     return firstSet;
 }
 
-std::unordered_set<Production::Symbol> Production::first() const
+std::unordered_set<parser::Production::Symbol> parser::Production::first() const
 {
     std::unordered_set<Symbol> firstSet;
     for (const std::vector<Symbol> &rule : rules) {
@@ -83,7 +85,41 @@ std::unordered_set<Production::Symbol> Production::first() const
     return firstSet;
 }
 
-Production::Node Production::produce(ParseContext &ctx)
+bool shouldUseRule(const std::vector<parser::Production::Symbol> &rule,
+                   const parser::ParseContext &ctx)
+{
+    using namespace parser;
+    std::unordered_set<Production::Symbol> ruleFirstSet = ruleFirst(rule);
+    bool ruleMatches = false;
+    for (const Production::Symbol &symbol : ruleFirstSet) {
+        if (ctx.token == nullptr) {
+            continue;
+        }
+
+        if (std::holds_alternative<Token::Id>(symbol)) {
+            if (std::get<Token::Id>(symbol) == ctx.token->id()) {
+                ruleMatches = true;
+                break;
+            }
+        }
+        else if (std::holds_alternative<char>(symbol)) {
+            if (ctx.token->text.size() == 1 &&
+                std::get<char>(symbol) == ctx.token->text[0]) {
+                ruleMatches = true;
+                break;
+            }
+        }
+        else if (std::holds_alternative<std::string>(symbol)) {
+            if (std::get<std::string>(symbol) == ctx.token->text) {
+                ruleMatches = true;
+                break;
+            }
+        }
+    }
+    return ruleMatches;
+}
+
+parser::Production::Node parser::Production::produce(ParseContext &ctx)
 {
     static int debug_depth = -1;
     debug_depth++;
@@ -97,60 +133,41 @@ Production::Node Production::produce(ParseContext &ctx)
             return Epsilon();
         }
 
-        // TODO: This should go in a helper function
-        std::unordered_set<Symbol> ruleFirstSet = ruleFirst(rule);
-        bool ruleMatches = false;
-        for (const Symbol &symbol : ruleFirstSet) {
-            if (ctx.token == nullptr) {
+        if (!shouldUseRule(rule, ctx)) {
+            continue;
+        }
+
+        DBG_OS(ios) << "Chosen rule: " << rule << "\n";
+        for (const Symbol &symbol : rule) {
+            if (std::holds_alternative<Production *>(symbol)) {
+                Production *prod = std::get<Production *>(symbol);
+                Node n = prod->produce(ctx);
+                if (!std::holds_alternative<Epsilon>(n)) {
+                    children.push_back(std::move(n));
+                }
                 continue;
             }
 
+            std::unique_ptr<Token> tok;
+            DBG_OS(ios) << "Eating symbol " << symbol << "\n";
             if (std::holds_alternative<Token::Id>(symbol)) {
-                if (std::get<Token::Id>(symbol) == ctx.token->id()) {
-                    ruleMatches = true;
-                    break;
-                }
+                tok = ctx.eat(std::get<Token::Id>(symbol));
             }
             else if (std::holds_alternative<char>(symbol)) {
-                if (ctx.token->text.size() == 1 &&
-                    std::get<char>(symbol) == ctx.token->text[0]) {
-                    ruleMatches = true;
-                    break;
-                }
+                tok = ctx.eat(std::get<char>(symbol));
             }
             else if (std::holds_alternative<std::string>(symbol)) {
-                if (std::get<std::string>(symbol) == ctx.token->text) {
-                    ruleMatches = true;
-                    break;
-                }
+                tok = ctx.eat(std::get<std::string>(symbol));
             }
+            DBG_OS(ios) << "Ate: " << *tok << "\n";
+            children.push_back(Terminal{std::move(tok)});
         }
-
-        if (ruleMatches) {
-            DBG_OS(ios) << "Chosen rule: " << rule << "\n";
-            for (const Symbol &symbol : rule) {
-                if (std::holds_alternative<Production *>(symbol)) {
-                    Production *prod = std::get<Production *>(symbol);
-                    // TODO: Don't add if prod->produce() is Epsilon
-                    children.push_back(prod->produce(ctx));
-                    continue;
-                }
-
-                std::unique_ptr<Token> tok;
-                DBG_OS(ios) << "Eating symbol " << symbol << "\n";
-                if (std::holds_alternative<Token::Id>(symbol)) {
-                    tok = ctx.eat(std::get<Token::Id>(symbol));
-                }
-                else if (std::holds_alternative<char>(symbol)) {
-                    tok = ctx.eat(std::get<char>(symbol));
-                }
-                else if (std::holds_alternative<std::string>(symbol)) {
-                    tok = ctx.eat(std::get<std::string>(symbol));
-                }
-                DBG_OS(ios) << "Ate: " << *tok << "\n";
-                children.push_back(Terminal{std::move(tok)});
-            }
-            debug_depth--;
+        debug_depth--;
+        assert(!children.empty());
+        if (children.size() == 1) {
+            return std::move(children.at(0));
+        }
+        else {
             return NonTerminal{std::move(children)};
         }
     }
@@ -159,7 +176,7 @@ Production::Node Production::produce(ParseContext &ctx)
     return Epsilon();
 }
 
-std::ostream &operator<<(std::ostream &os, const Production &p)
+std::ostream &parser::operator<<(std::ostream &os, const parser::Production &p)
 {
     if (!p.name.empty()) {
         os << "Production(" << p.name << ")";
@@ -175,8 +192,9 @@ std::ostream &operator<<(std::ostream &os, const Production &p)
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os,
-                         const std::vector<Production::Symbol> &rule)
+std::ostream &
+parser::operator<<(std::ostream &os,
+                   const std::vector<parser::Production::Symbol> &rule)
 {
     os << "Rule[\n";
     IndentedStream ios(os);
@@ -187,7 +205,8 @@ std::ostream &operator<<(std::ostream &os,
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, const Production::Symbol &s)
+std::ostream &parser::operator<<(std::ostream &os,
+                                 const parser::Production::Symbol &s)
 {
     os << "Symbol(";
     if (std::holds_alternative<Production *>(s)) {
@@ -205,7 +224,7 @@ std::ostream &operator<<(std::ostream &os, const Production::Symbol &s)
     os << ")";
     return os;
 }
-std::ostream &operator<<(std::ostream &os, const Production::Node &n)
+std::ostream &parser::operator<<(std::ostream &os, const Production::Node &n)
 {
     if (std::holds_alternative<Epsilon>(n)) {
         os << "Epsilon()";

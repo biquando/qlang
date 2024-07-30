@@ -3,6 +3,8 @@
 #include <ostream>
 #include <string>
 
+namespace parser {
+
 class Token {
   public:
     std::string text;
@@ -16,8 +18,7 @@ class Token {
      ============*/
   public:
     typedef int Id;
-    virtual Id id() = 0; // override this by returning Token<Derived>::id()
-                         // TODO: maybe don't delete this?
+    virtual Id id() = 0; // override this by returning Token::id<Derived>()
 
     template <typename T>
     static Id id()
@@ -38,3 +39,5 @@ class Token {
   private:
     virtual void print(std::ostream &o) const;
 };
+
+} // namespace parser

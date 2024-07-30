@@ -1,12 +1,14 @@
 #include "Token.hpp"
 
+using parser::Token;
+
 Token::Id Token::newTokenId()
 {
     static Id tokenId = 0;
     return ++tokenId;
 }
 
-std::ostream &operator<<(std::ostream &o, const Token &t)
+std::ostream &parser::operator<<(std::ostream &o, const Token &t)
 {
     t.print(o);
     return o;

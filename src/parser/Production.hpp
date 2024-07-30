@@ -9,7 +9,7 @@
 #include <variant>
 #include <vector>
 
-// TODO: namespaces
+namespace parser {
 
 struct Epsilon {};
 
@@ -46,5 +46,7 @@ class Production {
   private:
     std::vector<std::vector<Symbol>> rules;
 };
+
+} // namespace parser
 
 #include "Production.tpp" // IWYU pragma: keep
