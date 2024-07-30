@@ -1,4 +1,3 @@
-#include "parser/ParseContext.hpp"
 #include "parser/Production.hpp"
 #include "parser/Token.hpp"
 #include <cassert>
@@ -21,33 +20,6 @@ void addToken(std::vector<std::unique_ptr<Token>> &tokens, std::string text)
 
 int main()
 {
-    // G  -> i S G1
-    // G1 -> e S
-    //    ->
-    // S  -> s
-    //    -> { S1
-    // S1 -> L }
-    //    -> }
-    // L  -> S L1
-    // L1 -> L
-    //    ->
-    Production g("g");
-    Production g1("g1");
-    Production s;
-    Production s1("s1");
-    Production l("l");
-    Production l1("l1");
-    g.add({"if", &s, &g1});
-    g1.add({"else", &s});
-    g1.add({});
-    s.add({'s'});
-    s.add({'{', &s1});
-    s1.add({&l, '}'});
-    s1.add({'}'});
-    l.add({&s, &l1});
-    l1.add({&l});
-    l1.add({});
-
     // if{s{{}s}s}else{ss}
     std::vector<std::unique_ptr<Token>> tokens;
     addToken(tokens, "if");
@@ -66,10 +38,32 @@ int main()
     addToken(tokens, "s");
     addToken(tokens, "}");
 
-    ParseContext ctx(tokens);
+    // G  -> i S G1
+    // G1 -> e S
+    //    ->
+    // S  -> s
+    //    -> { S1
+    // S1 -> L }
+    //    -> }
+    // L  -> S L1
+    // L1 -> L
+    //    ->
+    Production g("g");
+    Production g1("g1");
+    Production s("s");
+    Production s1("s1");
+    Production l("l");
+    Production l1("l1");
+    g.add({"if", &s, &g1});
+    g1.add({"else", &s});
+    g1.add({});
+    s.add({'s'});
+    s.add({'{', &s1});
+    s1.add({&l, '}'});
+    s1.add({'}'});
+    l.add({&s, &l1});
+    l1.add({&l});
+    l1.add({});
 
-    Production::debug = true;
-    Production::Node n = g.produce(ctx, true);
-
-    std::cout << n << "\n";
+    std::cout << g.produce(tokens) << "\n";
 }

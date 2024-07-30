@@ -86,6 +86,13 @@ std::unordered_set<parser::Production::Symbol> parser::Production::first() const
     return firstSet;
 }
 
+parser::Production::Node
+parser::Production::produce(std::vector<std::unique_ptr<Token>> &tokens)
+{
+    ParseContext ctx(tokens);
+    return produce(ctx, true);
+}
+
 bool shouldUseRule(const std::vector<parser::Production::Symbol> &rule,
                    const parser::ParseContext &ctx)
 {

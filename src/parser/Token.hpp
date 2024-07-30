@@ -18,7 +18,7 @@ class Token {
      ============*/
   public:
     typedef int Id;
-    virtual Id id() = 0; // override this by returning Token::id<Derived>()
+    virtual Id id() { return id<Token>(); }
 
     template <typename T>
     static Id id()

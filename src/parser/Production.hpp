@@ -34,8 +34,9 @@ class Production {
 
     void add(std::initializer_list<Symbol> symbols);
     bool nullable() const;
-    std::unordered_set<Symbol> first() const;
+    Node produce(std::vector<std::unique_ptr<Token>> &tokens);
     Node produce(ParseContext &ctx, bool isGoal = false);
+    std::unordered_set<Symbol> first() const;
 
     friend std::ostream &operator<<(std::ostream &os, const Production &p);
     friend std::ostream &operator<<(std::ostream &os,

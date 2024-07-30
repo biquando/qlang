@@ -1,0 +1,41 @@
+#include "lexer/Lexer.hpp"
+#include "parser/Production.hpp"
+#include "parser/Token.hpp"
+#include <cstdio>
+#include <memory>
+#include <vector>
+
+using namespace std;
+using namespace lexer;
+using namespace parser;
+
+int main()
+{
+    Lexer<Token> lexer;
+    lexer.opts.ignoreWhitespace = true;
+    lexer.addTokenType("if");
+    lexer.addTokenType("else");
+    lexer.addTokenType("s");
+    lexer.addTokenType("{");
+    lexer.addTokenType("}");
+    vector<unique_ptr<Token>> tokens = lexer.tokenize(stdin);
+
+    Production g("g");
+    Production g1("g1");
+    Production s("s");
+    Production s1("s1");
+    Production l("l");
+    Production l1("l1");
+    g.add({"if", &s, &g1});
+    g1.add({"else", &s});
+    g1.add({});
+    s.add({'s'});
+    s.add({'{', &s1});
+    s1.add({&l, '}'});
+    s1.add({'}'});
+    l.add({&s, &l1});
+    l1.add({&l});
+    l1.add({});
+
+    std::cout << g.produce(tokens) << "\n";
+}
