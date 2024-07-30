@@ -4,6 +4,8 @@
 #include <memory>
 #include <string>
 
+using namespace lexer;
+
 struct Token {
     std::string text;
 
@@ -45,8 +47,8 @@ int main(void)
     l.opts.ignoreWhitespace = true;
     l.addTokenType<DecimalToken>(R"( [0-9]+ )");
     l.addTokenType<HexToken>(R"( 0x[0-9a-fA-F]+ )");
-    l.addTokenType(R"( \"([^"\\]|\\.)*\" )");
-    l.addTokenType(R"( \'([^'\\]|\\.)\' )");
+    l.addTokenType(R"( \"([^"\\\n]|\\.)*\" )");
+    l.addTokenType(R"( \'([^'\\\n]|\\.)\' )");
     l.addTokenType(R"(\/\/.*)", [](std::string) { return nullptr; });
     l.addTokenType(R"(\/\*[^*]*\*+([^/*][^*]*\*+)*\/)",
                    [](std::string) { return nullptr; });

@@ -1,16 +1,18 @@
 #pragma once
 
+#include "LexException.hpp"
 #include "Lexer.hpp"
 #include "RegexParsing.hpp"
 #include "State.hpp"
 #include "StateMachine.hpp"
 #include <functional>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
 template <typename Token>
-void Lexer<Token>::addTokenType(
+void lexer::Lexer<Token>::addTokenType(
     std::function<int(int, char)> transitionFn,
     std::function<std::unique_ptr<Token>(std::string)> constructorFn)
 {
@@ -19,7 +21,7 @@ void Lexer<Token>::addTokenType(
 }
 
 template <typename Token>
-void Lexer<Token>::addTokenType(
+void lexer::Lexer<Token>::addTokenType(
     std::string regex,
     std::function<std::unique_ptr<Token>(std::string)> constructorFn)
 {
@@ -31,7 +33,8 @@ void Lexer<Token>::addTokenType(
 
 template <typename Token>
 template <typename SubToken>
-void Lexer<Token>::addTokenType(std::function<int(int, char)> transitionFn)
+void lexer::Lexer<Token>::addTokenType(
+    std::function<int(int, char)> transitionFn)
 {
     transitionFns.push_back(transitionFn);
     constructorFns.push_back(
@@ -40,7 +43,7 @@ void Lexer<Token>::addTokenType(std::function<int(int, char)> transitionFn)
 
 template <typename Token>
 template <typename SubToken>
-void Lexer<Token>::addTokenType(std::string regex)
+void lexer::Lexer<Token>::addTokenType(std::string regex)
 {
     StateMachine sm(RegexParsing::toNode(regex));
     transitionFns.push_back(
@@ -50,13 +53,13 @@ void Lexer<Token>::addTokenType(std::string regex)
 }
 
 template <typename Token>
-void Lexer<Token>::addTokenType(std::string regex)
+void lexer::Lexer<Token>::addTokenType(std::string regex)
 {
     addTokenType<Token>(regex);
 }
 
 template <typename Token>
-int Lexer<Token>::nextChar(FILE *fd)
+int lexer::Lexer<Token>::nextChar(FILE *fd)
 {
     int c = fgetc(fd);
     if (c == '\n') {
@@ -70,8 +73,8 @@ int Lexer<Token>::nextChar(FILE *fd)
 }
 
 template <typename Token>
-std::pair<bool, int> Lexer<Token>::transitionStates(std::vector<int> &states,
-                                                    char c)
+std::pair<bool, int>
+lexer::Lexer<Token>::transitionStates(std::vector<int> &states, char c)
 {
     bool stillMatching = false;
     int firstAcceptedState = -1;
@@ -91,7 +94,7 @@ std::pair<bool, int> Lexer<Token>::transitionStates(std::vector<int> &states,
 }
 
 template <typename Token>
-void Lexer<Token>::handleOptions()
+void lexer::Lexer<Token>::handleOptions()
 {
     if (opts.ignoreWhitespace) {
         StateMachine ws(RegexParsing::toNode(R"([ \r\n\t\v]+)"));
@@ -101,7 +104,7 @@ void Lexer<Token>::handleOptions()
 }
 
 template <typename Token>
-std::vector<std::unique_ptr<Token>> Lexer<Token>::tokenize(FILE *fd)
+std::vector<std::unique_ptr<Token>> lexer::Lexer<Token>::tokenize(FILE *fd)
 {
     handleOptions();
     std::vector<std::unique_ptr<Token>> tokens;
@@ -125,19 +128,18 @@ std::vector<std::unique_ptr<Token>> Lexer<Token>::tokenize(FILE *fd)
 
         if (!stillMatching) {
             if (firstAcceptedState < 0) {
-                // TODO: push this error up
-                std::cerr << "Unexpected character at line " << loc.line
-                          << " col " << loc.col << ": ";
+                std::stringstream ss;
+                ss << "Unexpected character ";
                 if (c == EOF) {
-                    std::cerr << "EOF";
+                    ss << "EOF";
                 }
                 else if (isprint(c)) {
-                    std::cerr << "`" << (char)c << "`";
+                    ss << "`" << (char)c << "`";
                 }
                 else {
-                    std::cerr << "0x" << std::hex << (int)c << std::dec;
+                    ss << "0x" << std::hex << (int)c << std::dec;
                 }
-                std::cerr << "\n";
+                throw lexer::LexException(loc.line, loc.col, ss.str());
                 return tokens;
             }
             else {
@@ -157,6 +159,7 @@ std::vector<std::unique_ptr<Token>> Lexer<Token>::tokenize(FILE *fd)
         }
         if (c == EOF) {
             std::cerr << "Unexpected EOF\n";
+            throw lexer::LexException(loc.line, loc.col, "Unexpected EOF");
             break;
         }
 

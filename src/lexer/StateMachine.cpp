@@ -4,6 +4,8 @@
 #include <cassert>
 #include <memory>
 
+using lexer::StateMachine;
+
 StateMachine::StateMachine(std::unique_ptr<Node> n)
 {
     assert(State::Enter == 0);

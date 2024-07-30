@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 
+namespace lexer {
+
 class State {
   public:
     enum {
@@ -49,3 +51,5 @@ struct EpsilonState : public State {
     virtual bool isEpsilon() const override { return true; }
     virtual bool matches(char c) const override;
 };
+
+} // namespace lexer

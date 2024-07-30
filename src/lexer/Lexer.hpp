@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+namespace lexer {
+
 template <typename Token>
 class Lexer {
   public:
@@ -44,5 +46,7 @@ class Lexer {
         unsigned long col = 0;
     } loc;
 };
+
+} // namespace lexer
 
 #include "Lexer.tpp" // IWYU pragma: keep

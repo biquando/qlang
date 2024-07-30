@@ -3,6 +3,14 @@
 #include <iostream>
 #include <memory>
 
+using lexer::AlternateNode;
+using lexer::ConcatNode;
+using lexer::LiteralNode;
+using lexer::Node;
+using lexer::OptionalNode;
+using lexer::PlusNode;
+using lexer::StarNode;
+
 std::ostream &operator<<(std::ostream &o, const Node &n)
 {
     n.print(o);

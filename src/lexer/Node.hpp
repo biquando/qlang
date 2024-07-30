@@ -3,6 +3,8 @@
 #include "State.hpp"
 #include <memory>
 
+namespace lexer {
+
 struct Node {
     std::vector<std::shared_ptr<State>> states;
     std::vector<std::shared_ptr<State>> entry;
@@ -56,3 +58,5 @@ struct OptionalNode : Node {
     virtual void connect() override;
     virtual void print(std::ostream &o) const override;
 };
+
+} // namespace lexer

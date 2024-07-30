@@ -36,7 +36,7 @@ struct Pattern {
     Pattern(std::vector<int> tokens);
 };
 
-std::unique_ptr<Node> toNode(std::shared_ptr<Pattern> p);
-std::unique_ptr<Node> toNode(const std::string text);
+std::unique_ptr<lexer::Node> toNode(std::shared_ptr<Pattern> p);
+std::unique_ptr<lexer::Node> toNode(const std::string text);
 
 } // namespace RegexParsing

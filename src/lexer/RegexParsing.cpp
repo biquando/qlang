@@ -528,8 +528,9 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
     return;
 }
 
-std::unique_ptr<Node> RegexParsing::toNode(std::shared_ptr<Pattern> p)
+std::unique_ptr<lexer::Node> RegexParsing::toNode(std::shared_ptr<Pattern> p)
 {
+    using namespace lexer;
     DBG << "Creating node from pattern...\n";
     switch (p->type) {
     case Pattern::Char:
@@ -559,7 +560,7 @@ std::unique_ptr<Node> RegexParsing::toNode(std::shared_ptr<Pattern> p)
     }
 }
 
-std::unique_ptr<Node> RegexParsing::toNode(const std::string text)
+std::unique_ptr<lexer::Node> RegexParsing::toNode(const std::string text)
 {
     DBG << "Converting " << text << " to node\n";
     std::shared_ptr<Pattern> p = std::make_shared<Pattern>(text);

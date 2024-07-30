@@ -3,6 +3,9 @@
 #include <iostream>
 #include <memory>
 
+using lexer::EpsilonState;
+using lexer::State;
+
 std::ostream &operator<<(std::ostream &o, const State &n)
 {
     n.print(o);
