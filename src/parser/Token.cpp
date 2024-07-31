@@ -1,4 +1,4 @@
-#include "Token.hpp"
+#include "parser/Token.hpp"
 
 using parser::Token;
 

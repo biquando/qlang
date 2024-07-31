@@ -1,4 +1,4 @@
-#include "Node.hpp"
+#include "lexer/Node.hpp"
 #include "lexer/State.hpp"
 #include <iostream>
 #include <memory>

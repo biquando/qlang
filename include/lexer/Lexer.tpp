@@ -1,12 +1,13 @@
 #pragma once
 
-#include "LexException.hpp"
-#include "Lexer.hpp"
-#include "RegexParsing.hpp"
-#include "State.hpp"
-#include "StateMachine.hpp"
+#include "lexer/LexException.hpp"
+#include "lexer/Lexer.hpp"
+#include "lexer/RegexParsing.hpp"
+#include "lexer/State.hpp"
+#include "lexer/StateMachine.hpp"
 #include <functional>
 #include <iostream>
+#include <istream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -59,10 +60,17 @@ void lexer::Lexer<Token>::addTokenType(std::string regex)
 }
 
 template <typename Token>
-int lexer::Lexer<Token>::nextChar(FILE *fd)
+int lexer::Lexer<Token>::nextChar(std::istream &is)
 {
-    int c = fgetc(fd);
-    if (c == '\n') {
+    if (is.eof()) {
+        return EOF;
+    }
+
+    char c = is.get();
+    if (c == '\0') {
+        return EOF;
+    }
+    else if (c == '\n') {
         loc.line++;
         loc.col = 0;
     }
@@ -104,7 +112,8 @@ void lexer::Lexer<Token>::handleOptions()
 }
 
 template <typename Token>
-std::vector<std::unique_ptr<Token>> lexer::Lexer<Token>::tokenize(FILE *fd)
+std::vector<std::unique_ptr<Token>>
+lexer::Lexer<Token>::tokenize(std::istream &is)
 {
     handleOptions();
     std::vector<std::unique_ptr<Token>> tokens;
@@ -119,7 +128,7 @@ std::vector<std::unique_ptr<Token>> lexer::Lexer<Token>::tokenize(FILE *fd)
     };
     reset();
 
-    int c = nextChar(fd);
+    int c = nextChar(is);
     if (c == EOF) {
         return tokens;
     }
@@ -164,7 +173,7 @@ std::vector<std::unique_ptr<Token>> lexer::Lexer<Token>::tokenize(FILE *fd)
         }
 
         currToken.push_back(c);
-        c = nextChar(fd);
+        c = nextChar(is);
     }
 
     return tokens;

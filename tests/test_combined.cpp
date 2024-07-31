@@ -1,15 +1,17 @@
 #include "lexer/Lexer.hpp"
 #include "parser/Production.hpp"
 #include "parser/Token.hpp"
-#include <cstdio>
+#include <gtest/gtest.h>
+#include <iostream>
 #include <memory>
+#include <sstream>
 #include <vector>
 
 using namespace std;
 using namespace lexer;
 using namespace parser;
 
-int main()
+TEST(TestCombined, IfElse)
 {
     Lexer<Token> lexer;
     lexer.opts.ignoreWhitespace = true;
@@ -18,7 +20,6 @@ int main()
     lexer.addTokenType("s");
     lexer.addTokenType("{");
     lexer.addTokenType("}");
-    vector<unique_ptr<Token>> tokens = lexer.tokenize(stdin);
 
     Production g("g");
     Production g1("g1");
@@ -37,5 +38,8 @@ int main()
     l1.add({&l});
     l1.add({});
 
+    std::stringstream ss;
+    ss << "  if {s{ {}s}s }else {   ss }  ";
+    vector<unique_ptr<Token>> tokens = lexer.tokenize(ss);
     std::cout << g.produce(tokens) << "\n";
 }

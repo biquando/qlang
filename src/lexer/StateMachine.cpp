@@ -1,6 +1,6 @@
-#include "StateMachine.hpp"
-#include "Node.hpp"
-#include "State.hpp"
+#include "lexer/StateMachine.hpp"
+#include "lexer/Node.hpp"
+#include "lexer/State.hpp"
 #include <cassert>
 #include <memory>
 

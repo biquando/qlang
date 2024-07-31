@@ -5,3 +5,6 @@ tests/test-*
 .cache
 .DS_STORE
 .vscode/
+build/
+build-*/
+Testing/

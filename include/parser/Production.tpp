@@ -1,7 +1,7 @@
 #pragma once
 
-#include "IndentedStream.hpp"
-#include "Production.hpp"
+#include "parser/IndentedStream.hpp"
+#include "parser/Production.hpp"
 #include <cassert>
 #include <iostream>
 #include <sstream>

@@ -1,6 +1,7 @@
 #include "lexer/RegexParsing.hpp"
 #include <cassert>
 #include <cctype>
+#include <gtest/gtest.h>
 #include <iostream>
 #include <vector>
 
@@ -20,22 +21,9 @@ void printTokens(std::vector<int> tokens)
     }
 }
 
-int main()
-{
-    RegexParsing::debug = true;
-
-    // Tokenization
-    std::cout << "\nDecimal (" << R"([0-9]+)" << "):\n";
-    printTokens(RegexParsing::tokenize(R"([0-9]+)"));
-    std::cout << "\nHex (" << R"(0x[0-9a-fA-F]+)" << "):\n";
-    printTokens(RegexParsing::tokenize(R"(0x[0-9a-fA-F]+)"));
-    std::cout << "\nString (" << R"(\"([^"\\\n]|\\.)*\")" << "):\n";
-    printTokens(RegexParsing::tokenize(R"(\"([^"\\\n]|\\.)*\")"));
-    std::cout << "\nQuote test (" << R"("sw])i*\t([ch\")" << "):\n";
-    printTokens(RegexParsing::tokenize(R"("sw])i*\t([ch\")"));
-
-    // Validation
-    std::vector<std::string> failingTests{
+class TestRegex : public testing::Test {
+  protected:
+    TestRegex() : failingTests{
         R"()",
         R"(a(b(c)d)e(f)g)h)",
         R"(a(b(c)d(())e(f)g)h)",
@@ -54,8 +42,7 @@ int main()
         R"([^-b])",
         R"([^a-])",
         R"([^a-b-c])",
-    };
-    std::vector<std::string> passingTests{
+    }, passingTests{
         R"([0-9]+)",
         R"(0x[0-9a-fA-F]+)",
         R"(\"([^"\\\n]|\\.)*\")",
@@ -68,22 +55,50 @@ int main()
         R"(abc(z+def)*)",
         R"([^a-b])",
         R"([^a-bc-d])",
-    };
+    }
+    {
+        RegexParsing::debug = true;
+    }
+
+    std::vector<std::string> failingTests;
+    std::vector<std::string> passingTests;
+};
+
+TEST_F(TestRegex, Tokenization)
+{
+    std::cout << "\nDecimal (" << R"([0-9]+)" << "):\n";
+    printTokens(RegexParsing::tokenize(R"([0-9]+)"));
+    std::cout << "\nHex (" << R"(0x[0-9a-fA-F]+)" << "):\n";
+    printTokens(RegexParsing::tokenize(R"(0x[0-9a-fA-F]+)"));
+    std::cout << "\nString (" << R"(\"([^"\\\n]|\\.)*\")" << "):\n";
+    printTokens(RegexParsing::tokenize(R"(\"([^"\\\n]|\\.)*\")"));
+    std::cout << "\nQuote test (" << R"("sw])i*\t([ch\")" << "):\n";
+    printTokens(RegexParsing::tokenize(R"("sw])i*\t([ch\")"));
+}
+
+TEST_F(TestRegex, ValidationFail)
+{
     std::cout << "\nShould fail:\n";
     for (const std::string &test : failingTests) {
         std::cout << "\x1B[90m>\x1B[0m " << test << "\n";
         bool passes = RegexParsing::validate(RegexParsing::tokenize(test));
-        assert(!passes);
+        EXPECT_FALSE(passes);
     }
+}
+
+TEST_F(TestRegex, ValidationPass)
+{
     std::cout << "\nShould pass:\n";
     for (const std::string &test : passingTests) {
         std::cout << "\x1B[90m>\x1B[0m " << test << "\n";
         bool passes = RegexParsing::validate(RegexParsing::tokenize(test));
-        assert(passes);
+        EXPECT_TRUE(passes);
     }
     std::cout << "\nAll validation tests passed\n";
+}
 
-    // Decomposition
+TEST_F(TestRegex, Construction)
+{
     std::cout << "\nConstruction tests:\n";
     for (auto &test : passingTests) {
         std::cout << "\x1B[90m>\x1B[0m " << test << "\n";

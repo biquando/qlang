@@ -1,6 +1,6 @@
-#include "RegexParsing.hpp"
-#include "Node.hpp"
-#include "State.hpp"
+#include "lexer/RegexParsing.hpp"
+#include "lexer/Node.hpp"
+#include "lexer/State.hpp"
 #include <cassert>
 #include <iostream>
 #include <memory>

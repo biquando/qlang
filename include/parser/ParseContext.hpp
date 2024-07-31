@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Token.hpp"
+#include "parser/Token.hpp"
 #include <memory>
 #include <string>
 #include <vector>

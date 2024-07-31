@@ -1,6 +1,6 @@
 #pragma once
 
-#include "State.hpp"
+#include "lexer/State.hpp"
 #include <memory>
 
 namespace lexer {

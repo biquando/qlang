@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <istream>
 #include <string>
 #include <vector>
 
@@ -31,10 +32,10 @@ class Lexer {
 
     void addTokenType(std::string regex);
 
-    std::vector<std::unique_ptr<Token>> tokenize(FILE *fd);
+    std::vector<std::unique_ptr<Token>> tokenize(std::istream &is);
 
   private:
-    int nextChar(FILE *fd);
+    int nextChar(std::istream &is);
     std::pair<bool, int> transitionStates(std::vector<int> &states, char c);
     void handleOptions();
 
@@ -49,4 +50,4 @@ class Lexer {
 
 } // namespace lexer
 
-#include "Lexer.tpp" // IWYU pragma: keep
+#include "lexer/Lexer.tpp" // IWYU pragma: keep

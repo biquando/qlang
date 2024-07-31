@@ -1,7 +1,9 @@
 #include "lexer/Lexer.hpp"
 #include <cctype>
+#include <gtest/gtest.h>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <string>
 
 using namespace lexer;
@@ -41,7 +43,7 @@ struct HexToken : Token {
     }
 };
 
-int main(void)
+TEST(TestLexer, Literals)
 {
     Lexer<Token> l;
     l.opts.ignoreWhitespace = true;
@@ -53,7 +55,13 @@ int main(void)
     l.addTokenType(R"(\/\*[^*]*\*+([^/*][^*]*\*+)*\/)",
                    [](std::string) { return nullptr; });
 
-    std::vector<std::unique_ptr<Token>> tokens = l.tokenize(stdin);
+    std::stringstream ss;
+    ss << "   1234     0x20\"hello world\\\"\"\n";
+    ss << "    999'\\\\'0xff\"\"\n";
+    ss << "// hello world asdf 123\n";
+    ss << "/* siuofeh iusefh isuefh\n";
+    ss << "siuehf iuseh */\n";
+    std::vector<std::unique_ptr<Token>> tokens = l.tokenize(ss);
     std::cout << "\n=== TOKENS (" << tokens.size() << ") ===\n";
     for (auto &token : tokens) {
         std::cout << *token << "\n";

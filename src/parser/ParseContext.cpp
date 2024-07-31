@@ -1,6 +1,6 @@
-#include "ParseContext.hpp"
-#include "ParseException.hpp"
-#include "Token.hpp"
+#include "parser/ParseContext.hpp"
+#include "parser/ParseException.hpp"
+#include "parser/Token.hpp"
 #include <memory>
 #include <sstream>
 #include <string>
@@ -66,5 +66,3 @@ std::unique_ptr<Token> ParseContext::nextToken()
     }
     return std::move(tokens[i++]);
 }
-
-// vim:ft=cpp

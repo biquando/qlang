@@ -1,6 +1,7 @@
 #include "parser/Production.hpp"
 #include "parser/Token.hpp"
 #include <cassert>
+#include <gtest/gtest.h>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -18,7 +19,7 @@ void addToken(std::vector<std::unique_ptr<Token>> &tokens, std::string text)
     tokens.push_back(std::move(p));
 }
 
-int main()
+TEST(TestParser, IfElse)
 {
     // if{s{{}s}s}else{ss}
     std::vector<std::unique_ptr<Token>> tokens;

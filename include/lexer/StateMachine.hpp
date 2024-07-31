@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Node.hpp"
-#include "State.hpp"
+#include "lexer/Node.hpp"
+#include "lexer/State.hpp"
 #include <memory>
 #include <vector>
 
