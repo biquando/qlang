@@ -1,9 +1,10 @@
 #pragma once
 
-#include "parser/Token.hpp"
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "parser/Token.hpp"
 
 namespace parser {
 

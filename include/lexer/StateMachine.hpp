@@ -1,9 +1,10 @@
 #pragma once
 
-#include "lexer/Node.hpp"
-#include "lexer/State.hpp"
 #include <memory>
 #include <vector>
+
+#include "lexer/Node.hpp"
+#include "lexer/State.hpp"
 
 namespace lexer {
 

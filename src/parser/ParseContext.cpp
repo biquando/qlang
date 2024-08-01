@@ -1,10 +1,12 @@
 #include "parser/ParseContext.hpp"
-#include "parser/ParseException.hpp"
-#include "parser/Token.hpp"
+
 #include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
+
+#include "parser/ParseException.hpp"
+#include "parser/Token.hpp"
 
 using parser::ParseContext;
 using parser::Token;
@@ -21,8 +23,7 @@ auto ParseContext::eatGeneric(bool tokenIsValid,
 
     if (!expectedToken.empty()) {
         error("Expected " + expectedToken);
-    }
-    else {
+    } else {
         error();
     }
     return nullptr;
@@ -50,8 +51,7 @@ void ParseContext::error(const std::string &msg) const
     std::stringstream ss;
     if (token) {
         ss << "Found " << *token;
-    }
-    else {
+    } else {
         ss << "Unexpected end of input";
     }
 

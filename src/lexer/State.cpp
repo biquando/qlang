@@ -1,4 +1,5 @@
 #include "lexer/State.hpp"
+
 #include <cassert>
 #include <iostream>
 #include <memory>
@@ -30,8 +31,7 @@ void State::addEdge(const std::shared_ptr<State> &other)
 {
     if (other->isEpsilon()) {
         epsilonSuccessors.push_back(other);
-    }
-    else {
+    } else {
         successors.push_back(other);
     }
 }

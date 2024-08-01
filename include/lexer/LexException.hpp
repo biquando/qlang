@@ -8,7 +8,8 @@ namespace lexer {
 class LexException : public std::exception {
   public:
     LexException() : msg("Lex error") {}
-    LexException(unsigned long line, unsigned long col,
+    LexException(unsigned long line,
+                 unsigned long col,
                  const std::string &extra = "")
         : LexException()
     {

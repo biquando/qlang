@@ -1,10 +1,11 @@
 #pragma once
 
-#include "lexer/Node.hpp"
 #include <functional>
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "lexer/Node.hpp"
 
 namespace RegexParsing {
 

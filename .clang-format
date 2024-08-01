@@ -1,12 +1,35 @@
 ---
 Language: Cpp
 BasedOnStyle: LLVM
+AlignEscapedNewlines: Left
+AlignOperands: AlignAfterOperator
+AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Inline
 AlwaysBreakTemplateDeclarations: true
+BinPackArguments: false
+BinPackParameters: false
 BraceWrapping:
+  AfterControlStatement: MultiLine
+  AfterFunction: true
   SplitEmptyFunction: false
   SplitEmptyRecord: false
   SplitEmptyNamespace: false
-BreakBeforeBraces: Stroustrup
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeBraces: Custom
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^(<|"(gtest|gmock|isl|json)/)'
+    Priority: 1
+  - Regex: '.*'
+    Priority: 2
+IncludeIsMainSourceRegex: '\.tpp$'
 IndentWidth: 4
 InsertBraces: true
+InsertNewlineAtEOF: true
+InsertTrailingCommas: Wrapped
+KeepEmptyLinesAtTheStartOfBlocks: false
+PackConstructorInitializers: CurrentLine
+QualifierAlignment: Left
+RemoveParentheses: MultipleParentheses
+SpaceAfterTemplateKeyword: false
 ...

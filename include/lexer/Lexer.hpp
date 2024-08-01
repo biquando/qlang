@@ -9,31 +9,27 @@
 
 namespace lexer {
 
-template <typename Token>
+template<typename Token>
 class Lexer {
   public:
-    Lexer() = default;
+    using Transition = std::function<int(int, char)>;
+    using Constructor =
+        std::function<std::unique_ptr<Token>(const std::string &)>;
 
     struct {
         bool ignoreWhitespace = false;
     } opts;
 
-    void addTokenType(
-        const std::function<int(int, char)> &transitionFn,
-        const std::function<std::unique_ptr<Token>(const std::string &)>
-            &constructorFn);
+    Lexer() = default;
 
-    void addTokenType(
-        const std::string &regex,
-        const std::function<std::unique_ptr<Token>(const std::string &)>
-            &constructorFn);
-
-    template <typename SubToken>
-    void addTokenType(const std::function<int(int, char)> &transitionFn);
-
-    template <typename SubToken>
+    void addTokenType(const Transition &transitionFn,
+                      const Constructor &constructorFn);
+    void addTokenType(const std::string &regex,
+                      const Constructor &constructorFn);
+    template<typename SubToken>
+    void addTokenType(const Transition &transitionFn);
+    template<typename SubToken>
     void addTokenType(const std::string &regex);
-
     void addTokenType(const std::string &regex);
 
     auto tokenize(std::istream &is) -> std::vector<std::unique_ptr<Token>>;

@@ -1,8 +1,10 @@
 #include "lexer/Node.hpp"
-#include "lexer/State.hpp"
+
 #include <iostream>
 #include <memory>
 #include <utility>
+
+#include "lexer/State.hpp"
 
 using lexer::AlternateNode;
 using lexer::ConcatNode;
@@ -42,7 +44,8 @@ void LiteralNode::print(std::ostream &o) const
 
 ConcatNode::ConcatNode(std::unique_ptr<Node> _left,
                        std::unique_ptr<Node> _right)
-    : left(std::move(_left)), right(std::move(_right))
+    : left(std::move(_left)),
+      right(std::move(_right))
 {
     for (const auto &ls : left->states) {
         states.push_back(ls);
@@ -77,7 +80,8 @@ void ConcatNode::print(std::ostream &o) const
 
 AlternateNode::AlternateNode(std::unique_ptr<Node> _left,
                              std::unique_ptr<Node> _right)
-    : left(std::move(_left)), right(std::move(_right))
+    : left(std::move(_left)),
+      right(std::move(_right))
 {
     for (const auto &ls : left->states) {
         states.push_back(ls);

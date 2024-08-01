@@ -45,8 +45,7 @@ struct CharState : public State {
 struct PredState : public State {
     std::function<bool(char)> literal;
     PredState(std::function<bool(char)> literal) : literal(std::move(literal))
-    {
-    }
+    {}
     auto matches(char c) const -> bool override { return literal(c); }
 };
 

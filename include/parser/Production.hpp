@@ -1,7 +1,5 @@
 #pragma once
 
-#include "parser/ParseContext.hpp"
-#include "parser/Token.hpp"
 #include <initializer_list>
 #include <memory>
 #include <ostream>
@@ -10,6 +8,9 @@
 #include <utility>
 #include <variant>
 #include <vector>
+
+#include "parser/ParseContext.hpp"
+#include "parser/Token.hpp"
 
 namespace parser {
 

@@ -21,7 +21,7 @@ class Token {
     using Id = int;
     virtual auto id() -> Id { return id<Token>(); }
 
-    template <typename T>
+    template<typename T>
     static auto id() -> Id
     {
         static Id tokenId = newTokenId();

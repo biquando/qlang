@@ -1,9 +1,7 @@
 #pragma once
 
-#include "parser/IndentedStream.hpp"
-#include "parser/ParseContext.hpp"
 #include "parser/Production.hpp"
-#include "parser/Token.hpp"
+
 #include <cassert>
 #include <initializer_list>
 #include <iostream>
@@ -15,16 +13,18 @@
 #include <variant>
 #include <vector>
 
+#include "parser/IndentedStream.hpp"
+#include "parser/ParseContext.hpp"
+#include "parser/Token.hpp"
+
 bool parser::Production::debug = false;
-#define DBG                                                                    \
-    if (!Production::debug) {                                                  \
-    }                                                                          \
-    else                                                                       \
+#define DBG                   \
+    if (!Production::debug) { \
+    } else                    \
         std::cerr
-#define DBG_OS(os)                                                             \
-    if (!Production::debug) {                                                  \
-    }                                                                          \
-    else                                                                       \
+#define DBG_OS(os)            \
+    if (!Production::debug) { \
+    } else                    \
         os
 
 void parser::Production::add(std::initializer_list<Symbol> symbols)
@@ -46,8 +46,7 @@ auto parser::Production::nullable() const -> bool
                     containsNonNullable = true;
                     break;
                 }
-            }
-            else {
+            } else {
                 containsNonNullable = true;
                 break;
             }
@@ -65,19 +64,18 @@ static auto ruleFirst(const std::vector<parser::Production::Symbol> &rule)
     using namespace parser;
     std::unordered_set<Production::Symbol> firstSet;
     for (const Production::Symbol &symbol : rule) {
-        if (std::holds_alternative<Production *>(symbol)) {
-            const Production *prod = std::get<Production *>(symbol);
-            for (const Production::Symbol &s : prod->first()) {
-                firstSet.insert(s);
-            }
-            if (prod->nullable()) {
-                continue;
-            }
-        }
-        else {
+        if (!std::holds_alternative<Production *>(symbol)) {
             firstSet.insert(symbol);
+            break;
         }
-        break;
+
+        const Production *prod = std::get<Production *>(symbol);
+        for (const Production::Symbol &s : prod->first()) {
+            firstSet.insert(s);
+        }
+        if (!prod->nullable()) {
+            break;
+        }
     }
     return firstSet;
 }
@@ -116,15 +114,14 @@ static auto shouldUseRule(const std::vector<parser::Production::Symbol> &rule,
                 ruleMatches = true;
                 break;
             }
-        }
-        else if (std::holds_alternative<char>(symbol)) {
-            if (ctx.token->text.size() == 1 &&
-                std::get<char>(symbol) == ctx.token->text[0]) {
+        } else if (std::holds_alternative<char>(symbol)) {
+            if (ctx.token->text.size() == 1
+                && std::get<char>(symbol) == ctx.token->text[0])
+            {
                 ruleMatches = true;
                 break;
             }
-        }
-        else if (std::holds_alternative<std::string>(symbol)) {
+        } else if (std::holds_alternative<std::string>(symbol)) {
             if (std::get<std::string>(symbol) == ctx.token->text) {
                 ruleMatches = true;
                 break;
@@ -156,11 +153,9 @@ eatRule(const std::vector<parser::Production::Symbol> &rule,
         std::unique_ptr<Token> tok;
         if (std::holds_alternative<Token::Id>(symbol)) {
             tok = ctx.eat(std::get<Token::Id>(symbol));
-        }
-        else if (std::holds_alternative<char>(symbol)) {
+        } else if (std::holds_alternative<char>(symbol)) {
             tok = ctx.eat(std::get<char>(symbol));
-        }
-        else if (std::holds_alternative<std::string>(symbol)) {
+        } else if (std::holds_alternative<std::string>(symbol)) {
             tok = ctx.eat(std::get<std::string>(symbol));
         }
         children.emplace_back(Terminal{std::move(tok)});
@@ -251,14 +246,11 @@ auto parser::operator<<(std::ostream &os,
     os << "Symbol(";
     if (std::holds_alternative<Production *>(s)) {
         os << *std::get<Production *>(s);
-    }
-    else if (std::holds_alternative<Token::Id>(s)) {
+    } else if (std::holds_alternative<Token::Id>(s)) {
         os << "Token::Id " << std::get<Token::Id>(s);
-    }
-    else if (std::holds_alternative<char>(s)) {
+    } else if (std::holds_alternative<char>(s)) {
         os << '\'' << std::get<char>(s) << '\'';
-    }
-    else if (std::holds_alternative<std::string>(s)) {
+    } else if (std::holds_alternative<std::string>(s)) {
         os << '\"' << std::get<std::string>(s) << '\"';
     }
     os << ")";
@@ -269,11 +261,9 @@ auto parser::operator<<(std::ostream &os,
 {
     if (std::holds_alternative<Epsilon>(n)) {
         os << "Epsilon()";
-    }
-    else if (std::holds_alternative<Terminal>(n)) {
+    } else if (std::holds_alternative<Terminal>(n)) {
         os << "Terminal(" << *std::get<Terminal>(n).literal << ")";
-    }
-    else if (std::holds_alternative<NonTerminal>(n)) {
+    } else if (std::holds_alternative<NonTerminal>(n)) {
         os << "NonTerminal[\n";
         IndentedStream ios(os);
         for (const Production::Node &node : std::get<NonTerminal>(n).children) {

@@ -1,4 +1,5 @@
 #include "parser/Token.hpp"
+
 #include <ostream>
 
 using parser::Token;
@@ -15,4 +16,7 @@ auto parser::operator<<(std::ostream &o, const Token &t) -> std::ostream &
     return o;
 }
 
-void Token::print(std::ostream &o) const { o << "Token(" << text << ")"; }
+void Token::print(std::ostream &o) const
+{
+    o << "Token(" << text << ")";
+}

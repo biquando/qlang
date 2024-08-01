@@ -1,8 +1,10 @@
 #include "lexer/StateMachine.hpp"
-#include "lexer/Node.hpp"
-#include "lexer/State.hpp"
+
 #include <cassert>
 #include <memory>
+
+#include "lexer/Node.hpp"
+#include "lexer/State.hpp"
 
 using lexer::StateMachine;
 

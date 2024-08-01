@@ -1,10 +1,7 @@
 #pragma once
 
-#include "lexer/LexException.hpp"
 #include "lexer/Lexer.hpp"
-#include "lexer/RegexParsing.hpp"
-#include "lexer/State.hpp"
-#include "lexer/StateMachine.hpp"
+
 #include <cctype>
 #include <cstdio>
 #include <functional>
@@ -16,21 +13,22 @@
 #include <utility>
 #include <vector>
 
-template <typename Token>
-void lexer::Lexer<Token>::addTokenType(
-    const std::function<int(int, char)> &transitionFn,
-    const std::function<std::unique_ptr<Token>(const std::string &)>
-        &constructorFn)
+#include "lexer/LexException.hpp"
+#include "lexer/RegexParsing.hpp"
+#include "lexer/State.hpp"
+#include "lexer/StateMachine.hpp"
+
+template<typename Token>
+void lexer::Lexer<Token>::addTokenType(const Transition &transitionFn,
+                                       const Constructor &constructorFn)
 {
     transitionFns.push_back(transitionFn);
     constructorFns.push_back(constructorFn);
 }
 
-template <typename Token>
-void lexer::Lexer<Token>::addTokenType(
-    const std::string &regex,
-    const std::function<std::unique_ptr<Token>(const std::string &)>
-        &constructorFn)
+template<typename Token>
+void lexer::Lexer<Token>::addTokenType(const std::string &regex,
+                                       const Constructor &constructorFn)
 {
     StateMachine sm(RegexParsing::toNode(regex));
     transitionFns.push_back(
@@ -38,18 +36,17 @@ void lexer::Lexer<Token>::addTokenType(
     constructorFns.push_back(constructorFn);
 }
 
-template <typename Token>
-template <typename SubToken>
-void lexer::Lexer<Token>::addTokenType(
-    const std::function<int(int, char)> &transitionFn)
+template<typename Token>
+template<typename SubToken>
+void lexer::Lexer<Token>::addTokenType(const Transition &transitionFn)
 {
     transitionFns.push_back(transitionFn);
     constructorFns.push_back(
         [](std::string text) { return std::make_unique<SubToken>(text); });
 }
 
-template <typename Token>
-template <typename SubToken>
+template<typename Token>
+template<typename SubToken>
 void lexer::Lexer<Token>::addTokenType(const std::string &regex)
 {
     StateMachine sm(RegexParsing::toNode(regex));
@@ -59,13 +56,13 @@ void lexer::Lexer<Token>::addTokenType(const std::string &regex)
         [](std::string text) { return std::make_unique<SubToken>(text); });
 }
 
-template <typename Token>
+template<typename Token>
 void lexer::Lexer<Token>::addTokenType(const std::string &regex)
 {
     addTokenType<Token>(regex);
 }
 
-template <typename Token>
+template<typename Token>
 auto lexer::Lexer<Token>::nextChar(std::istream &is) -> int
 {
     if (is.eof()) {
@@ -80,14 +77,13 @@ auto lexer::Lexer<Token>::nextChar(std::istream &is) -> int
     if (c == '\n') {
         loc.line++;
         loc.col = 0;
-    }
-    else {
+    } else {
         loc.col++;
     }
     return c;
 }
 
-template <typename Token>
+template<typename Token>
 auto lexer::Lexer<Token>::transitionStates(std::vector<int> &states,
                                            char c) -> std::pair<bool, int>
 {
@@ -99,8 +95,8 @@ auto lexer::Lexer<Token>::transitionStates(std::vector<int> &states,
         if (firstAcceptedState < 0 && states[i] == (int)State::Accept) {
             firstAcceptedState = i;
         }
-        if (states[i] != (int)State::Accept &&
-            states[i] != (int)State::Reject) {
+        if (states[i] != (int)State::Accept && states[i] != (int)State::Reject)
+        {
             stillMatching = true;
         }
     }
@@ -108,7 +104,7 @@ auto lexer::Lexer<Token>::transitionStates(std::vector<int> &states,
     return {stillMatching, firstAcceptedState};
 }
 
-template <typename Token>
+template<typename Token>
 void lexer::Lexer<Token>::handleOptions()
 {
     if (opts.ignoreWhitespace) {
@@ -118,7 +114,7 @@ void lexer::Lexer<Token>::handleOptions()
     }
 }
 
-template <typename Token>
+template<typename Token>
 auto lexer::Lexer<Token>::tokenize(std::istream &is)
     -> std::vector<std::unique_ptr<Token>>
 {
@@ -148,11 +144,9 @@ auto lexer::Lexer<Token>::tokenize(std::istream &is)
                 ss << "Unexpected character ";
                 if (c == EOF) {
                     ss << "EOF";
-                }
-                else if (isprint(c)) {
+                } else if (isprint(c)) {
                     ss << "`" << (char)c << "`";
-                }
-                else {
+                } else {
                     ss << "0x" << std::hex << (int)c << std::dec;
                 }
                 throw lexer::LexException(loc.line, loc.col, ss.str());
