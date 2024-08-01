@@ -2,6 +2,7 @@
 #include "lexer/State.hpp"
 #include <iostream>
 #include <memory>
+#include <utility>
 
 using lexer::AlternateNode;
 using lexer::ConcatNode;

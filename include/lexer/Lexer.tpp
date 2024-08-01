@@ -5,12 +5,15 @@
 #include "lexer/RegexParsing.hpp"
 #include "lexer/State.hpp"
 #include "lexer/StateMachine.hpp"
+#include <cctype>
+#include <cstdio>
 #include <functional>
 #include <iostream>
 #include <istream>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 template <typename Token>

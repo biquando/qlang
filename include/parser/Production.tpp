@@ -1,11 +1,17 @@
 #pragma once
 
 #include "parser/IndentedStream.hpp"
+#include "parser/ParseContext.hpp"
 #include "parser/Production.hpp"
+#include "parser/Token.hpp"
 #include <cassert>
+#include <initializer_list>
 #include <iostream>
+#include <memory>
 #include <sstream>
+#include <string>
 #include <unordered_set>
+#include <utility>
 #include <variant>
 #include <vector>
 

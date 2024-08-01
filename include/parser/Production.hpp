@@ -4,6 +4,7 @@
 #include "parser/Token.hpp"
 #include <initializer_list>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <unordered_set>
 #include <utility>

@@ -2,6 +2,9 @@
 #include "lexer/Node.hpp"
 #include "lexer/State.hpp"
 #include <cassert>
+#include <cctype>
+#include <cstddef>
+#include <cstdio>
 #include <iostream>
 #include <memory>
 #include <sstream>

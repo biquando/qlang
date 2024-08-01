@@ -1,6 +1,7 @@
 #include "parser/IndentedStream.hpp"
 #include <iostream>
 #include <streambuf>
+#include <string>
 
 IndentedStreamBuffer::IndentedStreamBuffer(std::streambuf *buf, int indentWidth)
     : buf(buf), indentWidth(indentWidth), shouldIndent(true)

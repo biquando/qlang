@@ -2,6 +2,8 @@
 
 #include "lexer/State.hpp"
 #include <memory>
+#include <ostream>
+#include <vector>
 
 namespace lexer {
 
