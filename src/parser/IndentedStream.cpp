@@ -7,7 +7,7 @@ IndentedStreamBuffer::IndentedStreamBuffer(std::streambuf *buf, int indentWidth)
 {
 }
 
-int IndentedStreamBuffer::overflow(int c)
+auto IndentedStreamBuffer::overflow(int c) -> int
 {
     if (c == '\n') {
         shouldIndent = true;
@@ -20,7 +20,7 @@ int IndentedStreamBuffer::overflow(int c)
         }
         shouldIndent = false;
     }
-    return buf->sputc(c);
+    return buf->sputc(static_cast<char>(c));
 }
 
 IndentedStream::IndentedStream(std::ostream &os, int indentWidth)

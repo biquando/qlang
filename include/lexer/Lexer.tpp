@@ -8,14 +8,16 @@
 #include <functional>
 #include <iostream>
 #include <istream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
 
 template <typename Token>
 void lexer::Lexer<Token>::addTokenType(
-    std::function<int(int, char)> transitionFn,
-    std::function<std::unique_ptr<Token>(std::string)> constructorFn)
+    const std::function<int(int, char)> &transitionFn,
+    const std::function<std::unique_ptr<Token>(const std::string &)>
+        &constructorFn)
 {
     transitionFns.push_back(transitionFn);
     constructorFns.push_back(constructorFn);
@@ -23,8 +25,9 @@ void lexer::Lexer<Token>::addTokenType(
 
 template <typename Token>
 void lexer::Lexer<Token>::addTokenType(
-    std::string regex,
-    std::function<std::unique_ptr<Token>(std::string)> constructorFn)
+    const std::string &regex,
+    const std::function<std::unique_ptr<Token>(const std::string &)>
+        &constructorFn)
 {
     StateMachine sm(RegexParsing::toNode(regex));
     transitionFns.push_back(
@@ -35,7 +38,7 @@ void lexer::Lexer<Token>::addTokenType(
 template <typename Token>
 template <typename SubToken>
 void lexer::Lexer<Token>::addTokenType(
-    std::function<int(int, char)> transitionFn)
+    const std::function<int(int, char)> &transitionFn)
 {
     transitionFns.push_back(transitionFn);
     constructorFns.push_back(
@@ -44,7 +47,7 @@ void lexer::Lexer<Token>::addTokenType(
 
 template <typename Token>
 template <typename SubToken>
-void lexer::Lexer<Token>::addTokenType(std::string regex)
+void lexer::Lexer<Token>::addTokenType(const std::string &regex)
 {
     StateMachine sm(RegexParsing::toNode(regex));
     transitionFns.push_back(
@@ -54,23 +57,24 @@ void lexer::Lexer<Token>::addTokenType(std::string regex)
 }
 
 template <typename Token>
-void lexer::Lexer<Token>::addTokenType(std::string regex)
+void lexer::Lexer<Token>::addTokenType(const std::string &regex)
 {
     addTokenType<Token>(regex);
 }
 
 template <typename Token>
-int lexer::Lexer<Token>::nextChar(std::istream &is)
+auto lexer::Lexer<Token>::nextChar(std::istream &is) -> int
 {
     if (is.eof()) {
         return EOF;
     }
 
-    char c = is.get();
+    int c = is.get();
     if (c == '\0') {
         return EOF;
     }
-    else if (c == '\n') {
+
+    if (c == '\n') {
         loc.line++;
         loc.col = 0;
     }
@@ -81,8 +85,8 @@ int lexer::Lexer<Token>::nextChar(std::istream &is)
 }
 
 template <typename Token>
-std::pair<bool, int>
-lexer::Lexer<Token>::transitionStates(std::vector<int> &states, char c)
+auto lexer::Lexer<Token>::transitionStates(std::vector<int> &states,
+                                           char c) -> std::pair<bool, int>
 {
     bool stillMatching = false;
     int firstAcceptedState = -1;
@@ -98,7 +102,7 @@ lexer::Lexer<Token>::transitionStates(std::vector<int> &states, char c)
         }
     }
 
-    return std::pair<bool, int>(stillMatching, firstAcceptedState);
+    return {stillMatching, firstAcceptedState};
 }
 
 template <typename Token>
@@ -107,13 +111,13 @@ void lexer::Lexer<Token>::handleOptions()
     if (opts.ignoreWhitespace) {
         StateMachine ws(RegexParsing::toNode(R"([ \r\n\t\v]+)"));
         addTokenType([ws](int s, char c) { return ws.transition(s, c); },
-                     [](std::string) { return nullptr; });
+                     [](const std::string &) { return nullptr; });
     }
 }
 
 template <typename Token>
-std::vector<std::unique_ptr<Token>>
-lexer::Lexer<Token>::tokenize(std::istream &is)
+auto lexer::Lexer<Token>::tokenize(std::istream &is)
+    -> std::vector<std::unique_ptr<Token>>
 {
     handleOptions();
     std::vector<std::unique_ptr<Token>> tokens;
@@ -151,13 +155,12 @@ lexer::Lexer<Token>::tokenize(std::istream &is)
                 throw lexer::LexException(loc.line, loc.col, ss.str());
                 return tokens;
             }
-            else {
-                std::string tokenText(currToken.begin(), currToken.end());
-                std::unique_ptr<Token> token =
-                    constructorFns[firstAcceptedState](tokenText);
-                if (token != nullptr) {
-                    tokens.push_back(std::move(token));
-                }
+
+            std::string tokenText(currToken.begin(), currToken.end());
+            std::unique_ptr<Token> token =
+                constructorFns[firstAcceptedState](tokenText);
+            if (token != nullptr) {
+                tokens.push_back(std::move(token));
             }
             reset();
 
@@ -172,7 +175,7 @@ lexer::Lexer<Token>::tokenize(std::istream &is)
             break;
         }
 
-        currToken.push_back(c);
+        currToken.push_back(static_cast<char>(c));
         c = nextChar(is);
     }
 

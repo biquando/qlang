@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <istream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -17,26 +18,29 @@ class Lexer {
     } opts;
 
     void addTokenType(
-        std::function<int(int, char)> transitionFn,
-        std::function<std::unique_ptr<Token>(std::string)> constructorFn);
+        const std::function<int(int, char)> &transitionFn,
+        const std::function<std::unique_ptr<Token>(const std::string &)>
+            &constructorFn);
 
     void addTokenType(
-        std::string regex,
-        std::function<std::unique_ptr<Token>(std::string)> constructorFn);
+        const std::string &regex,
+        const std::function<std::unique_ptr<Token>(const std::string &)>
+            &constructorFn);
 
     template <typename SubToken>
-    void addTokenType(std::function<int(int, char)> transitionFn);
+    void addTokenType(const std::function<int(int, char)> &transitionFn);
 
     template <typename SubToken>
-    void addTokenType(std::string regex);
+    void addTokenType(const std::string &regex);
 
-    void addTokenType(std::string regex);
+    void addTokenType(const std::string &regex);
 
-    std::vector<std::unique_ptr<Token>> tokenize(std::istream &is);
+    auto tokenize(std::istream &is) -> std::vector<std::unique_ptr<Token>>;
 
   private:
-    int nextChar(std::istream &is);
-    std::pair<bool, int> transitionStates(std::vector<int> &states, char c);
+    auto nextChar(std::istream &is) -> int;
+    auto transitionStates(std::vector<int> &states,
+                          char c) -> std::pair<bool, int>;
     void handleOptions();
 
     std::vector<std::function<int(int, char)>> transitionFns;

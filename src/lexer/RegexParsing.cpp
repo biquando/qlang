@@ -18,7 +18,7 @@ bool RegexParsing::debug = false;
     else                                                                       \
         std::cerr
 
-static char escape(char c)
+static auto escape(char c) -> char
 {
     switch (c) {
     case '\\':
@@ -51,21 +51,21 @@ static char escape(char c)
 static inline void addSpecial(std::vector<int> &tokens, char c)
 {
     assert(c > 0);
-    tokens.push_back(-(int)c);
+    tokens.push_back(-static_cast<int>(c));
 }
 
 static inline void addLiteral(std::vector<int> &tokens, char c)
 {
-    tokens.push_back((unsigned)c);
+    tokens.push_back(c);
 }
 
-std::vector<int> RegexParsing::tokenize(const std::string text)
+auto RegexParsing::tokenize(const std::string &text) -> std::vector<int>
 {
     std::vector<int> tokens;
 
     bool inQuotes = false;
     bool inSquareBrackets = false;
-    for (size_t i = 0; text[i]; i++) {
+    for (size_t i = 0; text[i] != '\0'; i++) {
         char c = text[i];
 
         if (inQuotes) {
@@ -82,19 +82,20 @@ std::vector<int> RegexParsing::tokenize(const std::string text)
         if (inSquareBrackets) {
             // If there is a carat (^) at the beginning, this case is handled
             // when entering the square brackets.
-            if (c == ']') {
+            switch (c) {
+            case ']':
                 inSquareBrackets = false;
                 addSpecial(tokens, ']');
-            }
-            else if (c == '\\') {
+                break;
+            case '\\':
                 c = text[++i];
                 assert(c != '\0');
                 addLiteral(tokens, escape(c));
-            }
-            else if (c == '-') {
+                break;
+            case '-':
                 addSpecial(tokens, c);
-            }
-            else {
+                break;
+            default:
                 addLiteral(tokens, c);
             }
             continue;
@@ -147,7 +148,7 @@ std::vector<int> RegexParsing::tokenize(const std::string text)
     return tokens;
 }
 
-static bool equalsSpecial(int token, char c)
+static auto equalsSpecial(int token, char c) -> bool
 {
     return token < 0 && (char)(-token) == c;
 }
@@ -166,7 +167,8 @@ static bool equalsSpecial(int token, char c)
  *       takes care of that, and [] are checked to be matched earlier
  */
 // TODO: check for non-determinism
-bool RegexParsing::validate(const std::vector<int> &tokens)
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+auto RegexParsing::validate(const std::vector<int> &tokens) -> bool
 {
     // empty expression
     if (tokens.size() == 0) {
@@ -272,7 +274,7 @@ bool RegexParsing::validate(const std::vector<int> &tokens)
         if (!equalsSpecial(tokens[i], '-')) {
             continue;
         }
-        if (!(tokens[i - 1] > 0 && tokens[i + 1] > 0)) {
+        if (tokens[i - 1] <= 0 || tokens[i + 1] <= 0) {
             DBG << "Validation failed: Non-literals on side of - in []\n";
             return false;
         }
@@ -286,7 +288,7 @@ bool RegexParsing::validate(const std::vector<int> &tokens)
     return true;
 }
 
-std::string RegexParsing::tokensToString(const std::vector<int> &tokens)
+auto RegexParsing::tokensToString(const std::vector<int> &tokens) -> std::string
 {
     std::stringstream ss;
     for (int c : tokens) {
@@ -329,9 +331,13 @@ std::string RegexParsing::tokensToString(const std::vector<int> &tokens)
  * - check for char
  *     - assert the only char is a literal or -'.'
  */
-RegexParsing::Pattern::Pattern(std::string text) : Pattern(tokenize(text)) {}
+RegexParsing::Pattern::Pattern(const std::string &text)
+    : Pattern(tokenize(text))
+{
+}
 
-RegexParsing::Pattern::Pattern(std::vector<int> tokens)
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+RegexParsing::Pattern::Pattern(const std::vector<int> &tokens)
 {
     DBG << "Constructing pattern with text: " << tokensToString(tokens) << "\n";
     assert(validate(tokens));
@@ -469,10 +475,8 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
                         }
                         i += 2;
                     }
-                    else {
-                        if (c == inner[i]) {
-                            return false;
-                        }
+                    else if (c == inner[i]) {
+                        return false;
                     }
                 }
                 return true;
@@ -497,10 +501,8 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
                         }
                         i += 2;
                     }
-                    else {
-                        if (c == inner[i]) {
-                            return true;
-                        }
+                    else if (c == inner[i]) {
+                        return true;
                     }
                 }
                 DBG << "did not match :(\n";
@@ -524,11 +526,11 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
     DBG << "Char: literal=" << tokensToString(tokens) << "\n";
     assert(tokens[0] > 0);
     type = Char;
-    literalChar = tokens[0];
-    return;
+    literalChar = static_cast<char>(tokens[0]);
 }
 
-std::unique_ptr<lexer::Node> RegexParsing::toNode(std::shared_ptr<Pattern> p)
+auto RegexParsing::toNode(const std::shared_ptr<Pattern> &p)
+    -> std::unique_ptr<lexer::Node>
 {
     using namespace lexer;
     DBG << "Creating node from pattern...\n";
@@ -560,7 +562,8 @@ std::unique_ptr<lexer::Node> RegexParsing::toNode(std::shared_ptr<Pattern> p)
     }
 }
 
-std::unique_ptr<lexer::Node> RegexParsing::toNode(const std::string text)
+auto RegexParsing::toNode(const std::string &text)
+    -> std::unique_ptr<lexer::Node>
 {
     DBG << "Converting " << text << " to node\n";
     std::shared_ptr<Pattern> p = std::make_shared<Pattern>(text);

@@ -8,9 +8,9 @@ using lexer::StateMachine;
 
 StateMachine::StateMachine(std::unique_ptr<Node> n)
 {
-    assert(State::Enter == 0);
-    assert(State::Accept == 1);
-    assert(State::Reject == 2);
+    static_assert(State::Enter == 0);
+    static_assert(State::Accept == 1);
+    static_assert(State::Reject == 2);
 
     // Enter
     states.push_back(std::make_unique<PredState>([](char) { return true; }));
@@ -22,22 +22,23 @@ StateMachine::StateMachine(std::unique_ptr<Node> n)
     states.push_back(std::make_unique<PredState>([](char) { return true; }));
     states[State::Reject]->id = State::Reject;
 
-    for (auto state : n->states) {
+    for (const auto &state : n->states) {
         state->id = states.size();
         states.push_back(state);
     }
-    for (auto e : n->entry) {
+    for (const auto &e : n->entry) {
         states[State::Enter]->addEdge(e);
     }
-    for (auto x : n->exit) {
+    for (const auto &x : n->exit) {
         x->addEdge(states[State::Accept]);
     }
-    for (auto state : states) {
+    for (const auto &state : states) {
         state->setRejector(states[State::Reject]);
     }
 }
 
-int StateMachine::transition(int state, char c) const
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+auto StateMachine::transition(int state, char c) const -> int
 {
     if (state == State::Accept || state == State::Reject) {
         return State::Reject;
@@ -48,5 +49,5 @@ int StateMachine::transition(int state, char c) const
     if (nextState == nullptr) {
         return State::Reject;
     }
-    return nextState->id;
+    return static_cast<int>(nextState->id);
 }

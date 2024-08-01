@@ -8,42 +8,43 @@
 using parser::ParseContext;
 using parser::Token;
 
-std::unique_ptr<Token> ParseContext::eatGeneric(bool tokenIsValid,
-                                                std::string expectedToken)
+auto ParseContext::eatGeneric(bool tokenIsValid,
+                              const std::string &expectedToken)
+    -> std::unique_ptr<Token>
 {
     if (tokenIsValid) {
         auto tok = std::move(token);
         token = nextToken();
         return tok;
     }
-    else {
-        if (!expectedToken.empty()) {
-            error("Expected " + expectedToken);
-            return nullptr;
-        }
-        error();
-        return nullptr;
+
+    if (!expectedToken.empty()) {
+        error("Expected " + expectedToken);
     }
+    else {
+        error();
+    }
+    return nullptr;
 }
 
-std::unique_ptr<Token> ParseContext::eat(Token::Id t)
+auto ParseContext::eat(Token::Id t) -> std::unique_ptr<Token>
 {
     return eatGeneric(token && token->id() == t,
                       "Token::Id=" + std::to_string(t));
 }
 
-std::unique_ptr<Token> ParseContext::eat(char c)
+auto ParseContext::eat(char c) -> std::unique_ptr<Token>
 {
     return eatGeneric(token && token->text.size() == 1 && token->text[0] == c,
                       "'" + std::string(1, c) + "'");
 }
 
-std::unique_ptr<Token> ParseContext::eat(std::string s)
+auto ParseContext::eat(const std::string &s) -> std::unique_ptr<Token>
 {
     return eatGeneric(token && token->text == s, "\"" + s + "\"");
 }
 
-void ParseContext::error(std::string msg)
+void ParseContext::error(const std::string &msg) const
 {
     std::stringstream ss;
     if (token) {
@@ -59,7 +60,7 @@ void ParseContext::error(std::string msg)
     throw ParseException(i, ss.str());
 }
 
-std::unique_ptr<Token> ParseContext::nextToken()
+auto ParseContext::nextToken() -> std::unique_ptr<Token>
 {
     if (i == tokens.size()) {
         return nullptr;

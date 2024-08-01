@@ -10,10 +10,10 @@ namespace RegexParsing {
 
 extern bool debug;
 
-std::vector<int> tokenize(const std::string text);
-bool validate(const std::vector<int> &tokens);
+auto tokenize(const std::string &text) -> std::vector<int>;
+auto validate(const std::vector<int> &tokens) -> bool;
 
-std::string tokensToString(const std::vector<int> &tokens);
+auto tokensToString(const std::vector<int> &tokens) -> std::string;
 
 struct Pattern {
     enum Type {
@@ -32,11 +32,11 @@ struct Pattern {
     std::shared_ptr<Pattern> opr2;
 
     Pattern() = default;
-    Pattern(std::string text);
-    Pattern(std::vector<int> tokens);
+    Pattern(const std::string &text);
+    Pattern(const std::vector<int> &tokens);
 };
 
-std::unique_ptr<lexer::Node> toNode(std::shared_ptr<Pattern> p);
-std::unique_ptr<lexer::Node> toNode(const std::string text);
+auto toNode(const std::shared_ptr<Pattern> &p) -> std::unique_ptr<lexer::Node>;
+auto toNode(const std::string &text) -> std::unique_ptr<lexer::Node>;
 
 } // namespace RegexParsing
