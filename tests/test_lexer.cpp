@@ -1,20 +1,23 @@
-#include "lexer/Lexer.hpp"
 #include <cctype>
 #include <gtest/gtest.h>
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
+#include <vector>
+
+#include "lexer/Lexer.hpp"
 
 using namespace lexer;
 
 struct Token {
     std::string text;
 
-    Token(std::string text) : text(text) {}
+    Token(std::string text) : text(std::move(text)) {}
     virtual ~Token() = default;
 
-    friend std::ostream &operator<<(std::ostream &o, const Token &t)
+    friend auto operator<<(std::ostream &o, const Token &t) -> std::ostream &
     {
         t.print(o);
         return o;
@@ -24,7 +27,7 @@ struct Token {
 
 struct DecimalToken : Token {
     long val;
-    DecimalToken(std::string text) : Token(text), val(std::stol(text)) {}
+    DecimalToken(const std::string &text) : Token(text), val(std::stol(text)) {}
     void print(std::ostream &o) const override
     {
         o << "DecimalToken(" << val << ")";
@@ -33,10 +36,10 @@ struct DecimalToken : Token {
 
 struct HexToken : Token {
     unsigned long val;
-    HexToken(std::string text)
-        : Token(text), val(std::stol(text.substr(2), nullptr, 16))
-    {
-    }
+    HexToken(const std::string &text)
+        : Token(text),
+          val(std::stol(text.substr(2), nullptr, 16))
+    {}
     void print(std::ostream &o) const override
     {
         o << "HexToken(" << val << ")";
@@ -51,9 +54,9 @@ TEST(TestLexer, Literals)
     l.addTokenType<HexToken>(R"( 0x[0-9a-fA-F]+ )");
     l.addTokenType(R"( \"([^"\\\n]|\\.)*\" )");
     l.addTokenType(R"( \'([^'\\\n]|\\.)\' )");
-    l.addTokenType(R"(\/\/.*)", [](std::string) { return nullptr; });
+    l.addTokenType(R"(\/\/.*)", [](const std::string &) { return nullptr; });
     l.addTokenType(R"(\/\*[^*]*\*+([^/*][^*]*\*+)*\/)",
-                   [](std::string) { return nullptr; });
+                   [](const std::string &) { return nullptr; });
 
     std::stringstream ss;
     ss << "   1234     0x20\"hello world\\\"\"\n";
