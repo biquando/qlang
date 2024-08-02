@@ -7,6 +7,11 @@ set(LEXER_SRC
 
 add_library(lexer ${LEXER_SRC})
 target_include_directories(lexer PUBLIC ../../include)
-target_compile_options(lexer PRIVATE -Wall -Wextra -pedantic)
+
+if(MSVC)
+  target_compile_options(lexer PRIVATE /Wall)
+else()
+  target_compile_options(lexer PRIVATE -Wall -Wextra -pedantic)
+endif()
 
 install(TARGETS lexer)
