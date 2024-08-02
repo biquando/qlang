@@ -1,7 +1,10 @@
 #include "lexer/Node.hpp"
-#include "lexer/State.hpp"
+
 #include <iostream>
 #include <memory>
+#include <utility>
+
+#include "lexer/State.hpp"
 
 using lexer::AlternateNode;
 using lexer::ConcatNode;
@@ -11,7 +14,7 @@ using lexer::OptionalNode;
 using lexer::PlusNode;
 using lexer::StarNode;
 
-std::ostream &operator<<(std::ostream &o, const Node &n)
+auto operator<<(std::ostream &o, const Node &n) -> std::ostream &
 {
     n.print(o);
     return o;
@@ -23,7 +26,7 @@ void Node::print(std::ostream &o) const
       << "]";
 }
 
-LiteralNode::LiteralNode(std::shared_ptr<State> s)
+LiteralNode::LiteralNode(const std::shared_ptr<State> &s)
 {
     states.push_back(s);
     entry.push_back(s);
@@ -41,18 +44,19 @@ void LiteralNode::print(std::ostream &o) const
 
 ConcatNode::ConcatNode(std::unique_ptr<Node> _left,
                        std::unique_ptr<Node> _right)
-    : left(std::move(_left)), right(std::move(_right))
+    : left(std::move(_left)),
+      right(std::move(_right))
 {
-    for (auto ls : left->states) {
+    for (const auto &ls : left->states) {
         states.push_back(ls);
     }
-    for (auto rs : right->states) {
+    for (const auto &rs : right->states) {
         states.push_back(rs);
     }
-    for (auto le : left->entry) {
+    for (const auto &le : left->entry) {
         entry.push_back(le);
     }
-    for (auto rx : right->exit) {
+    for (const auto &rx : right->exit) {
         exit.push_back(rx);
     }
 
@@ -61,8 +65,8 @@ ConcatNode::ConcatNode(std::unique_ptr<Node> _left,
 
 void ConcatNode::connect()
 {
-    for (auto lx : left->exit) {
-        for (auto re : right->entry) {
+    for (const auto &lx : left->exit) {
+        for (const auto &re : right->entry) {
             lx->addEdge(re);
         }
     }
@@ -76,24 +80,25 @@ void ConcatNode::print(std::ostream &o) const
 
 AlternateNode::AlternateNode(std::unique_ptr<Node> _left,
                              std::unique_ptr<Node> _right)
-    : left(std::move(_left)), right(std::move(_right))
+    : left(std::move(_left)),
+      right(std::move(_right))
 {
-    for (auto ls : left->states) {
+    for (const auto &ls : left->states) {
         states.push_back(ls);
     }
-    for (auto rs : right->states) {
+    for (const auto &rs : right->states) {
         states.push_back(rs);
     }
-    for (auto le : left->entry) {
+    for (const auto &le : left->entry) {
         entry.push_back(le);
     }
-    for (auto re : right->entry) {
+    for (const auto &re : right->entry) {
         entry.push_back(re);
     }
-    for (auto lx : left->exit) {
+    for (const auto &lx : left->exit) {
         exit.push_back(lx);
     }
-    for (auto rx : right->exit) {
+    for (const auto &rx : right->exit) {
         exit.push_back(rx);
     }
 
@@ -118,8 +123,8 @@ PlusNode::PlusNode(std::unique_ptr<Node> _opr) : opr(std::move(_opr))
 
 void PlusNode::connect()
 {
-    for (auto e : opr->entry) {
-        for (auto x : opr->exit) {
+    for (const auto &e : opr->entry) {
+        for (const auto &x : opr->exit) {
             x->addEdge(e);
         }
     }
@@ -147,8 +152,8 @@ StarNode::StarNode(std::unique_ptr<Node> _opr) : opr(std::move(_opr))
 
 void StarNode::connect()
 {
-    for (auto e : opr->entry) {
-        for (auto x : opr->exit) {
+    for (const auto &e : opr->entry) {
+        for (const auto &x : opr->exit) {
             x->addEdge(e);
         }
     }

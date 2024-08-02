@@ -1,11 +1,12 @@
-#include "lexer/Lexer.hpp"
-#include "parser/Production.hpp"
-#include "parser/Token.hpp"
 #include <gtest/gtest.h>
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <vector>
+
+#include "lexer/Lexer.hpp"
+#include "parser/Production.hpp"
+#include "parser/Token.hpp"
 
 using namespace std;
 using namespace lexer;

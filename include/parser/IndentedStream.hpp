@@ -8,7 +8,7 @@ class IndentedStreamBuffer : public std::streambuf {
     explicit IndentedStreamBuffer(std::streambuf *buf, int indentWidth = 2);
 
   protected:
-    virtual int overflow(int c) override;
+    auto overflow(int c) -> int override;
 
   private:
     std::streambuf *buf;

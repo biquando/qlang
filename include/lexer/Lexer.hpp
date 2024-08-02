@@ -2,41 +2,42 @@
 
 #include <functional>
 #include <istream>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace lexer {
 
-template <typename Token>
+template<typename Token>
 class Lexer {
   public:
-    Lexer() = default;
+    using Transition = std::function<int(int, char)>;
+    using Constructor =
+        std::function<std::unique_ptr<Token>(const std::string &)>;
 
     struct {
         bool ignoreWhitespace = false;
     } opts;
 
-    void addTokenType(
-        std::function<int(int, char)> transitionFn,
-        std::function<std::unique_ptr<Token>(std::string)> constructorFn);
+    Lexer() = default;
 
-    void addTokenType(
-        std::string regex,
-        std::function<std::unique_ptr<Token>(std::string)> constructorFn);
+    void addTokenType(const Transition &transitionFn,
+                      const Constructor &constructorFn);
+    void addTokenType(const std::string &regex,
+                      const Constructor &constructorFn);
+    template<typename SubToken>
+    void addTokenType(const Transition &transitionFn);
+    template<typename SubToken>
+    void addTokenType(const std::string &regex);
+    void addTokenType(const std::string &regex);
 
-    template <typename SubToken>
-    void addTokenType(std::function<int(int, char)> transitionFn);
-
-    template <typename SubToken>
-    void addTokenType(std::string regex);
-
-    void addTokenType(std::string regex);
-
-    std::vector<std::unique_ptr<Token>> tokenize(std::istream &is);
+    auto tokenize(std::istream &is) -> std::vector<std::unique_ptr<Token>>;
 
   private:
-    int nextChar(std::istream &is);
-    std::pair<bool, int> transitionStates(std::vector<int> &states, char c);
+    auto nextChar(std::istream &is) -> int;
+    auto transitionStates(std::vector<int> &states,
+                          char c) -> std::pair<bool, int>;
     void handleOptions();
 
     std::vector<std::function<int(int, char)>> transitionFns;

@@ -6,6 +6,11 @@ set(PARSER_SRC
 
 add_library(parser ${PARSER_SRC})
 target_include_directories(parser PUBLIC ../../include)
-target_compile_options(parser PRIVATE -Wall -Wextra -pedantic)
+
+if(MSVC)
+  target_compile_options(parser PRIVATE /Wall)
+else()
+  target_compile_options(parser PRIVATE -Wall -Wextra -pedantic)
+endif()
 
 install(TARGETS parser)

@@ -1,19 +1,23 @@
-#include "parser/Production.hpp"
-#include "parser/Token.hpp"
 #include <cassert>
 #include <gtest/gtest.h>
 #include <iostream>
 #include <memory>
+#include <string>
+#include <utility>
 #include <vector>
+
+#include "parser/Production.hpp"
+#include "parser/Token.hpp"
 
 using namespace parser;
 
 struct TextToken : public Token {
-    TextToken(std::string text) : Token(text) {}
-    Token::Id id() override { return Token::id<TextToken>(); }
+    TextToken(std::string text) : Token(std::move(text)) {}
+    auto id() -> Token::Id override { return Token::id<TextToken>(); }
 };
 
-void addToken(std::vector<std::unique_ptr<Token>> &tokens, std::string text)
+void addToken(std::vector<std::unique_ptr<Token>> &tokens,
+              const std::string &text)
 {
     auto p = std::make_unique<TextToken>(text);
     tokens.push_back(std::move(p));
