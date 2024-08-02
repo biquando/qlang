@@ -377,7 +377,9 @@ RegexParsing::Pattern::Pattern(const std::vector<int> &tokens)
             break;
         case Concat:
         case Alternate:
+            opr1 = std::move(p.opr1);
             opr2 = std::move(p.opr2);
+            break;
         case Plus:
         case Star:
         case Optional:
@@ -561,6 +563,7 @@ auto RegexParsing::toNode(const std::shared_ptr<Pattern> &p)
         DBG << "toNode: Optional\n";
         return std::make_unique<OptionalNode>(toNode(p->opr1));
     }
+    return nullptr;
 }
 
 auto RegexParsing::toNode(const std::string &text)

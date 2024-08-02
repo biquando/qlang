@@ -15,5 +15,4 @@ if(PROJECT_IS_TOP_LEVEL)
 endif()
 
 install(DIRECTORY include/ DESTINATION include) # HACK: use target_sources()?
-set(INSTALL_GTEST OFF)
 include(CPack)

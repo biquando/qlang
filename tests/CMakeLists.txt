@@ -6,6 +6,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
+set(INSTALL_GTEST OFF)
 
 set(TESTS
   test_combined
