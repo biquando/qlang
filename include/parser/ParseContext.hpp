@@ -1,9 +1,10 @@
 #pragma once
 
-#include "parser/Token.hpp"
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "parser/Token.hpp"
 
 namespace parser {
 
@@ -17,16 +18,16 @@ class ParseContext {
         i = 0;
         token = nextToken();
     }
-    std::unique_ptr<Token> eat(Token::Id t);
-    std::unique_ptr<Token> eat(char c);
-    std::unique_ptr<Token> eat(std::string s);
-    void error(std::string msg = "");
+    auto eat(Token::Id t) -> std::unique_ptr<Token>;
+    auto eat(char c) -> std::unique_ptr<Token>;
+    auto eat(const std::string &s) -> std::unique_ptr<Token>;
+    void error(const std::string &msg = "") const;
 
   private:
     std::vector<std::unique_ptr<Token>> &tokens;
-    std::unique_ptr<Token> eatGeneric(bool validToken,
-                                      std::string expectedToken = "");
-    std::unique_ptr<Token> nextToken();
+    auto eatGeneric(bool tokenIsValid, const std::string &expectedToken = "")
+        -> std::unique_ptr<Token>;
+    auto nextToken() -> std::unique_ptr<Token>;
 };
 
 } // namespace parser

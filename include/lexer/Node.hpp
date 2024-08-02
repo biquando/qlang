@@ -1,7 +1,10 @@
 #pragma once
 
-#include "lexer/State.hpp"
 #include <memory>
+#include <ostream>
+#include <vector>
+
+#include "lexer/State.hpp"
 
 namespace lexer {
 
@@ -12,51 +15,51 @@ struct Node {
     virtual ~Node() = default;
     virtual void connect() = 0;
 
-    friend std::ostream &operator<<(std::ostream &o, const Node &n);
+    friend auto operator<<(std::ostream &o, const Node &n) -> std::ostream &;
     virtual void print(std::ostream &o) const;
 };
 
 struct LiteralNode : Node {
-    LiteralNode(std::shared_ptr<State> s);
-    virtual void connect() override;
-    virtual void print(std::ostream &o) const override;
+    LiteralNode(const std::shared_ptr<State> &s);
+    void connect() override;
+    void print(std::ostream &o) const override;
 };
 
 struct ConcatNode : Node {
     std::unique_ptr<Node> left;
     std::unique_ptr<Node> right;
     ConcatNode(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
-    virtual void connect() override;
-    virtual void print(std::ostream &o) const override;
+    void connect() override;
+    void print(std::ostream &o) const override;
 };
 
 struct AlternateNode : Node {
     std::unique_ptr<Node> left;
     std::unique_ptr<Node> right;
     AlternateNode(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
-    virtual void connect() override;
-    virtual void print(std::ostream &o) const override;
+    void connect() override;
+    void print(std::ostream &o) const override;
 };
 
 struct PlusNode : Node {
     std::unique_ptr<Node> opr;
     PlusNode(std::unique_ptr<Node> opr);
-    virtual void connect() override;
-    virtual void print(std::ostream &o) const override;
+    void connect() override;
+    void print(std::ostream &o) const override;
 };
 
 struct StarNode : Node {
     std::unique_ptr<Node> opr;
     StarNode(std::unique_ptr<Node> opr);
-    virtual void connect() override;
-    virtual void print(std::ostream &o) const override;
+    void connect() override;
+    void print(std::ostream &o) const override;
 };
 
 struct OptionalNode : Node {
     std::unique_ptr<Node> opr;
     OptionalNode(std::unique_ptr<Node> opr);
-    virtual void connect() override;
-    virtual void print(std::ostream &o) const override;
+    void connect() override;
+    void print(std::ostream &o) const override;
 };
 
 } // namespace lexer

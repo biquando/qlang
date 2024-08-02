@@ -1,24 +1,30 @@
 #pragma once
 
-#include "parser/IndentedStream.hpp"
 #include "parser/Production.hpp"
+
 #include <cassert>
+#include <initializer_list>
 #include <iostream>
+#include <memory>
 #include <sstream>
+#include <string>
 #include <unordered_set>
+#include <utility>
 #include <variant>
 #include <vector>
 
+#include "parser/IndentedStream.hpp"
+#include "parser/ParseContext.hpp"
+#include "parser/Token.hpp"
+
 bool parser::Production::debug = false;
-#define DBG                                                                    \
-    if (!Production::debug) {                                                  \
-    }                                                                          \
-    else                                                                       \
+#define DBG                   \
+    if (!Production::debug) { \
+    } else                    \
         std::cerr
-#define DBG_OS(os)                                                             \
-    if (!Production::debug) {                                                  \
-    }                                                                          \
-    else                                                                       \
+#define DBG_OS(os)            \
+    if (!Production::debug) { \
+    } else                    \
         os
 
 void parser::Production::add(std::initializer_list<Symbol> symbols)
@@ -26,7 +32,7 @@ void parser::Production::add(std::initializer_list<Symbol> symbols)
     rules.emplace_back(symbols.begin(), symbols.end());
 }
 
-bool parser::Production::nullable() const
+auto parser::Production::nullable() const -> bool
 {
     for (const std::vector<Symbol> &rule : rules) {
         if (rule.empty()) {
@@ -40,8 +46,7 @@ bool parser::Production::nullable() const
                     containsNonNullable = true;
                     break;
                 }
-            }
-            else {
+            } else {
                 containsNonNullable = true;
                 break;
             }
@@ -53,30 +58,30 @@ bool parser::Production::nullable() const
     return false;
 }
 
-static std::unordered_set<parser::Production::Symbol>
-ruleFirst(std::vector<parser::Production::Symbol> rule)
+static auto ruleFirst(const std::vector<parser::Production::Symbol> &rule)
+    -> std::unordered_set<parser::Production::Symbol>
 {
     using namespace parser;
     std::unordered_set<Production::Symbol> firstSet;
     for (const Production::Symbol &symbol : rule) {
-        if (std::holds_alternative<Production *>(symbol)) {
-            const Production *prod = std::get<Production *>(symbol);
-            for (const Production::Symbol &s : prod->first()) {
-                firstSet.insert(s);
-            }
-            if (prod->nullable()) {
-                continue;
-            }
-        }
-        else {
+        if (!std::holds_alternative<Production *>(symbol)) {
             firstSet.insert(symbol);
+            break;
         }
-        break;
+
+        const Production *prod = std::get<Production *>(symbol);
+        for (const Production::Symbol &s : prod->first()) {
+            firstSet.insert(s);
+        }
+        if (!prod->nullable()) {
+            break;
+        }
     }
     return firstSet;
 }
 
-std::unordered_set<parser::Production::Symbol> parser::Production::first() const
+auto parser::Production::first() const
+    -> std::unordered_set<parser::Production::Symbol>
 {
     std::unordered_set<Symbol> firstSet;
     for (const std::vector<Symbol> &rule : rules) {
@@ -86,15 +91,15 @@ std::unordered_set<parser::Production::Symbol> parser::Production::first() const
     return firstSet;
 }
 
-parser::Production::Node
-parser::Production::produce(std::vector<std::unique_ptr<Token>> &tokens)
+auto parser::Production::produce(std::vector<std::unique_ptr<Token>> &tokens)
+    -> parser::Production::Node
 {
     ParseContext ctx(tokens);
     return produce(ctx, true);
 }
 
-bool shouldUseRule(const std::vector<parser::Production::Symbol> &rule,
-                   const parser::ParseContext &ctx)
+static auto shouldUseRule(const std::vector<parser::Production::Symbol> &rule,
+                          const parser::ParseContext &ctx) -> bool
 {
     using namespace parser;
     std::unordered_set<Production::Symbol> ruleFirstSet = ruleFirst(rule);
@@ -109,15 +114,14 @@ bool shouldUseRule(const std::vector<parser::Production::Symbol> &rule,
                 ruleMatches = true;
                 break;
             }
-        }
-        else if (std::holds_alternative<char>(symbol)) {
-            if (ctx.token->text.size() == 1 &&
-                std::get<char>(symbol) == ctx.token->text[0]) {
+        } else if (std::holds_alternative<char>(symbol)) {
+            if (ctx.token->text.size() == 1
+                && std::get<char>(symbol) == ctx.token->text[0])
+            {
                 ruleMatches = true;
                 break;
             }
-        }
-        else if (std::holds_alternative<std::string>(symbol)) {
+        } else if (std::holds_alternative<std::string>(symbol)) {
             if (std::get<std::string>(symbol) == ctx.token->text) {
                 ruleMatches = true;
                 break;
@@ -127,6 +131,38 @@ bool shouldUseRule(const std::vector<parser::Production::Symbol> &rule,
     return ruleMatches;
 }
 
+static auto
+eatRule(const std::vector<parser::Production::Symbol> &rule,
+        parser::ParseContext &ctx) -> std::vector<parser::Production::Node>
+{
+    using namespace parser;
+    using Node = parser::Production::Node;
+    using Symbol = parser::Production::Symbol;
+
+    std::vector<Node> children;
+    for (const Symbol &symbol : rule) {
+        if (std::holds_alternative<Production *>(symbol)) {
+            Production *prod = std::get<Production *>(symbol);
+            Node n = prod->produce(ctx);
+            if (!std::holds_alternative<Epsilon>(n)) {
+                children.push_back(std::move(n));
+            }
+            continue;
+        }
+
+        std::unique_ptr<Token> tok;
+        if (std::holds_alternative<Token::Id>(symbol)) {
+            tok = ctx.eat(std::get<Token::Id>(symbol));
+        } else if (std::holds_alternative<char>(symbol)) {
+            tok = ctx.eat(std::get<char>(symbol));
+        } else if (std::holds_alternative<std::string>(symbol)) {
+            tok = ctx.eat(std::get<std::string>(symbol));
+        }
+        children.emplace_back(Terminal{std::move(tok)});
+    }
+    return children;
+}
+
 static void checkGoal(parser::ParseContext &ctx, bool isGoal)
 {
     if (isGoal && ctx.token) {
@@ -134,15 +170,14 @@ static void checkGoal(parser::ParseContext &ctx, bool isGoal)
     }
 }
 
-parser::Production::Node parser::Production::produce(ParseContext &ctx,
-                                                     bool isGoal)
+auto parser::Production::produce(ParseContext &ctx,
+                                 bool isGoal) -> parser::Production::Node
 {
     static int debug_depth = -1;
     debug_depth++;
     IndentedStream ios(std::cerr, debug_depth * 4);
     DBG_OS(ios) << "Producing " << *this << "\n";
 
-    std::vector<Node> children;
     for (std::vector<Symbol> &rule : rules) {
         if (rule.empty()) {
             DBG_OS(ios) << "(epsilon)\n";
@@ -156,39 +191,15 @@ parser::Production::Node parser::Production::produce(ParseContext &ctx,
         }
 
         DBG_OS(ios) << "Chosen rule: " << rule << "\n";
-        for (const Symbol &symbol : rule) {
-            if (std::holds_alternative<Production *>(symbol)) {
-                Production *prod = std::get<Production *>(symbol);
-                Node n = prod->produce(ctx);
-                if (!std::holds_alternative<Epsilon>(n)) {
-                    children.push_back(std::move(n));
-                }
-                continue;
-            }
+        std::vector<Node> children = eatRule(rule, ctx);
 
-            std::unique_ptr<Token> tok;
-            DBG_OS(ios) << "Eating symbol " << symbol << "\n";
-            if (std::holds_alternative<Token::Id>(symbol)) {
-                tok = ctx.eat(std::get<Token::Id>(symbol));
-            }
-            else if (std::holds_alternative<char>(symbol)) {
-                tok = ctx.eat(std::get<char>(symbol));
-            }
-            else if (std::holds_alternative<std::string>(symbol)) {
-                tok = ctx.eat(std::get<std::string>(symbol));
-            }
-            DBG_OS(ios) << "Ate: " << *tok << "\n";
-            children.push_back(Terminal{std::move(tok)});
-        }
         debug_depth--;
         assert(!children.empty());
         checkGoal(ctx, isGoal);
         if (children.size() == 1) {
             return std::move(children.at(0));
         }
-        else {
-            return NonTerminal{std::move(children)};
-        }
+        return NonTerminal{std::move(children)};
     }
 
     std::stringstream ss;
@@ -199,7 +210,8 @@ parser::Production::Node parser::Production::produce(ParseContext &ctx,
     return Epsilon();
 }
 
-std::ostream &parser::operator<<(std::ostream &os, const parser::Production &p)
+auto parser::operator<<(std::ostream &os,
+                        const parser::Production &p) -> std::ostream &
 {
     if (!p.name.empty()) {
         os << "Production(" << p.name << ")";
@@ -215,9 +227,9 @@ std::ostream &parser::operator<<(std::ostream &os, const parser::Production &p)
     return os;
 }
 
-std::ostream &
-parser::operator<<(std::ostream &os,
-                   const std::vector<parser::Production::Symbol> &rule)
+auto parser::operator<<(std::ostream &os,
+                        const std::vector<parser::Production::Symbol> &rule)
+    -> std::ostream &
 {
     os << "Rule[\n";
     IndentedStream ios(os);
@@ -228,34 +240,30 @@ parser::operator<<(std::ostream &os,
     return os;
 }
 
-std::ostream &parser::operator<<(std::ostream &os,
-                                 const parser::Production::Symbol &s)
+auto parser::operator<<(std::ostream &os,
+                        const parser::Production::Symbol &s) -> std::ostream &
 {
     os << "Symbol(";
     if (std::holds_alternative<Production *>(s)) {
         os << *std::get<Production *>(s);
-    }
-    else if (std::holds_alternative<Token::Id>(s)) {
+    } else if (std::holds_alternative<Token::Id>(s)) {
         os << "Token::Id " << std::get<Token::Id>(s);
-    }
-    else if (std::holds_alternative<char>(s)) {
+    } else if (std::holds_alternative<char>(s)) {
         os << '\'' << std::get<char>(s) << '\'';
-    }
-    else if (std::holds_alternative<std::string>(s)) {
+    } else if (std::holds_alternative<std::string>(s)) {
         os << '\"' << std::get<std::string>(s) << '\"';
     }
     os << ")";
     return os;
 }
-std::ostream &parser::operator<<(std::ostream &os, const Production::Node &n)
+auto parser::operator<<(std::ostream &os,
+                        const Production::Node &n) -> std::ostream &
 {
     if (std::holds_alternative<Epsilon>(n)) {
         os << "Epsilon()";
-    }
-    else if (std::holds_alternative<Terminal>(n)) {
+    } else if (std::holds_alternative<Terminal>(n)) {
         os << "Terminal(" << *std::get<Terminal>(n).literal << ")";
-    }
-    else if (std::holds_alternative<NonTerminal>(n)) {
+    } else if (std::holds_alternative<NonTerminal>(n)) {
         os << "NonTerminal[\n";
         IndentedStream ios(os);
         for (const Production::Node &node : std::get<NonTerminal>(n).children) {

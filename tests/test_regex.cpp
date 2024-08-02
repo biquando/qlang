@@ -1,20 +1,20 @@
-#include "lexer/RegexParsing.hpp"
 #include <cassert>
 #include <cctype>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <string>
 #include <vector>
 
-void printTokens(std::vector<int> tokens)
+#include "lexer/RegexParsing.hpp"
+
+void printTokens(const std::vector<int> &tokens)
 {
     for (int c : tokens) {
         if (isprint(c)) {
             std::cout << "  " << (char)c;
-        }
-        else if (c < 0) {
+        } else if (c < 0) {
             std::cout << (char)(-c);
-        }
-        else {
+        } else {
             std::cout << std::hex << "  0x" << c << std::dec;
         }
         std::cout << '\n';

@@ -2,6 +2,8 @@
 
 #include <functional>
 #include <memory>
+#include <ostream>
+#include <utility>
 #include <vector>
 
 namespace lexer {
@@ -16,16 +18,16 @@ class State {
     unsigned id;
 
     virtual ~State() = default;
-    void addEdge(std::shared_ptr<State> other);
-    std::shared_ptr<State> transition(char c) const;
-    virtual bool matches(char c) const = 0;
-    virtual bool isEpsilon() const { return false; }
+    void addEdge(const std::shared_ptr<State> &other);
+    auto transition(char c) const -> std::shared_ptr<State>;
+    virtual auto matches(char c) const -> bool = 0;
+    virtual auto isEpsilon() const -> bool { return false; }
     void setRejector(std::shared_ptr<State> rejector)
     {
-        this->rejector = rejector;
+        this->rejector = std::move(rejector);
     }
 
-    friend std::ostream &operator<<(std::ostream &o, const State &n);
+    friend auto operator<<(std::ostream &o, const State &n) -> std::ostream &;
     virtual void print(std::ostream &o) const;
 
   protected:
@@ -37,19 +39,20 @@ class State {
 struct CharState : public State {
     char literal;
     CharState(char literal) : literal(literal) {}
-    virtual bool matches(char c) const override { return c == literal; }
+    auto matches(char c) const -> bool override { return c == literal; }
 };
 
 struct PredState : public State {
     std::function<bool(char)> literal;
-    PredState(std::function<bool(char)> literal) : literal(literal) {}
-    virtual bool matches(char c) const override { return literal(c); }
+    PredState(std::function<bool(char)> literal) : literal(std::move(literal))
+    {}
+    auto matches(char c) const -> bool override { return literal(c); }
 };
 
 struct EpsilonState : public State {
     EpsilonState() = default;
-    virtual bool isEpsilon() const override { return true; }
-    virtual bool matches(char c) const override;
+    auto isEpsilon() const -> bool override { return true; }
+    auto matches(char /*c*/) const -> bool override { return true; }
 };
 
 } // namespace lexer

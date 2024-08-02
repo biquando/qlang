@@ -1,30 +1,34 @@
 #pragma once
 
-#include "lexer/LexException.hpp"
 #include "lexer/Lexer.hpp"
-#include "lexer/RegexParsing.hpp"
-#include "lexer/State.hpp"
-#include "lexer/StateMachine.hpp"
+
+#include <cctype>
+#include <cstdio>
 #include <functional>
 #include <iostream>
 #include <istream>
+#include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
-template <typename Token>
-void lexer::Lexer<Token>::addTokenType(
-    std::function<int(int, char)> transitionFn,
-    std::function<std::unique_ptr<Token>(std::string)> constructorFn)
+#include "lexer/LexException.hpp"
+#include "lexer/RegexParsing.hpp"
+#include "lexer/State.hpp"
+#include "lexer/StateMachine.hpp"
+
+template<typename Token>
+void lexer::Lexer<Token>::addTokenType(const Transition &transitionFn,
+                                       const Constructor &constructorFn)
 {
     transitionFns.push_back(transitionFn);
     constructorFns.push_back(constructorFn);
 }
 
-template <typename Token>
-void lexer::Lexer<Token>::addTokenType(
-    std::string regex,
-    std::function<std::unique_ptr<Token>(std::string)> constructorFn)
+template<typename Token>
+void lexer::Lexer<Token>::addTokenType(const std::string &regex,
+                                       const Constructor &constructorFn)
 {
     StateMachine sm(RegexParsing::toNode(regex));
     transitionFns.push_back(
@@ -32,19 +36,18 @@ void lexer::Lexer<Token>::addTokenType(
     constructorFns.push_back(constructorFn);
 }
 
-template <typename Token>
-template <typename SubToken>
-void lexer::Lexer<Token>::addTokenType(
-    std::function<int(int, char)> transitionFn)
+template<typename Token>
+template<typename SubToken>
+void lexer::Lexer<Token>::addTokenType(const Transition &transitionFn)
 {
     transitionFns.push_back(transitionFn);
     constructorFns.push_back(
         [](std::string text) { return std::make_unique<SubToken>(text); });
 }
 
-template <typename Token>
-template <typename SubToken>
-void lexer::Lexer<Token>::addTokenType(std::string regex)
+template<typename Token>
+template<typename SubToken>
+void lexer::Lexer<Token>::addTokenType(const std::string &regex)
 {
     StateMachine sm(RegexParsing::toNode(regex));
     transitionFns.push_back(
@@ -53,36 +56,36 @@ void lexer::Lexer<Token>::addTokenType(std::string regex)
         [](std::string text) { return std::make_unique<SubToken>(text); });
 }
 
-template <typename Token>
-void lexer::Lexer<Token>::addTokenType(std::string regex)
+template<typename Token>
+void lexer::Lexer<Token>::addTokenType(const std::string &regex)
 {
     addTokenType<Token>(regex);
 }
 
-template <typename Token>
-int lexer::Lexer<Token>::nextChar(std::istream &is)
+template<typename Token>
+auto lexer::Lexer<Token>::nextChar(std::istream &is) -> int
 {
     if (is.eof()) {
         return EOF;
     }
 
-    char c = is.get();
+    int c = is.get();
     if (c == '\0') {
         return EOF;
     }
-    else if (c == '\n') {
+
+    if (c == '\n') {
         loc.line++;
         loc.col = 0;
-    }
-    else {
+    } else {
         loc.col++;
     }
     return c;
 }
 
-template <typename Token>
-std::pair<bool, int>
-lexer::Lexer<Token>::transitionStates(std::vector<int> &states, char c)
+template<typename Token>
+auto lexer::Lexer<Token>::transitionStates(std::vector<int> &states,
+                                           char c) -> std::pair<bool, int>
 {
     bool stillMatching = false;
     int firstAcceptedState = -1;
@@ -92,28 +95,28 @@ lexer::Lexer<Token>::transitionStates(std::vector<int> &states, char c)
         if (firstAcceptedState < 0 && states[i] == (int)State::Accept) {
             firstAcceptedState = i;
         }
-        if (states[i] != (int)State::Accept &&
-            states[i] != (int)State::Reject) {
+        if (states[i] != (int)State::Accept && states[i] != (int)State::Reject)
+        {
             stillMatching = true;
         }
     }
 
-    return std::pair<bool, int>(stillMatching, firstAcceptedState);
+    return {stillMatching, firstAcceptedState};
 }
 
-template <typename Token>
+template<typename Token>
 void lexer::Lexer<Token>::handleOptions()
 {
     if (opts.ignoreWhitespace) {
         StateMachine ws(RegexParsing::toNode(R"([ \r\n\t\v]+)"));
         addTokenType([ws](int s, char c) { return ws.transition(s, c); },
-                     [](std::string) { return nullptr; });
+                     [](const std::string &) { return nullptr; });
     }
 }
 
-template <typename Token>
-std::vector<std::unique_ptr<Token>>
-lexer::Lexer<Token>::tokenize(std::istream &is)
+template<typename Token>
+auto lexer::Lexer<Token>::tokenize(std::istream &is)
+    -> std::vector<std::unique_ptr<Token>>
 {
     handleOptions();
     std::vector<std::unique_ptr<Token>> tokens;
@@ -141,23 +144,20 @@ lexer::Lexer<Token>::tokenize(std::istream &is)
                 ss << "Unexpected character ";
                 if (c == EOF) {
                     ss << "EOF";
-                }
-                else if (isprint(c)) {
+                } else if (isprint(c)) {
                     ss << "`" << (char)c << "`";
-                }
-                else {
+                } else {
                     ss << "0x" << std::hex << (int)c << std::dec;
                 }
                 throw lexer::LexException(loc.line, loc.col, ss.str());
                 return tokens;
             }
-            else {
-                std::string tokenText(currToken.begin(), currToken.end());
-                std::unique_ptr<Token> token =
-                    constructorFns[firstAcceptedState](tokenText);
-                if (token != nullptr) {
-                    tokens.push_back(std::move(token));
-                }
+
+            std::string tokenText(currToken.begin(), currToken.end());
+            std::unique_ptr<Token> token =
+                constructorFns[firstAcceptedState](tokenText);
+            if (token != nullptr) {
+                tokens.push_back(std::move(token));
             }
             reset();
 
@@ -172,7 +172,7 @@ lexer::Lexer<Token>::tokenize(std::istream &is)
             break;
         }
 
-        currToken.push_back(c);
+        currToken.push_back(static_cast<char>(c));
         c = nextChar(is);
     }
 

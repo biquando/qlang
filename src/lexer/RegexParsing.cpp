@@ -1,7 +1,9 @@
 #include "lexer/RegexParsing.hpp"
-#include "lexer/Node.hpp"
-#include "lexer/State.hpp"
+
 #include <cassert>
+#include <cctype>
+#include <cstddef>
+#include <cstdio>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -9,16 +11,18 @@
 #include <utility>
 #include <vector>
 
+#include "lexer/Node.hpp"
+#include "lexer/State.hpp"
+
 using namespace RegexParsing;
 
 bool RegexParsing::debug = false;
-#define DBG                                                                    \
-    if (!RegexParsing::debug) {                                                \
-    }                                                                          \
-    else                                                                       \
+#define DBG                     \
+    if (!RegexParsing::debug) { \
+    } else                      \
         std::cerr
 
-static char escape(char c)
+static auto escape(char c) -> char
 {
     switch (c) {
     case '\\':
@@ -51,29 +55,28 @@ static char escape(char c)
 static inline void addSpecial(std::vector<int> &tokens, char c)
 {
     assert(c > 0);
-    tokens.push_back(-(int)c);
+    tokens.push_back(-static_cast<int>(c));
 }
 
 static inline void addLiteral(std::vector<int> &tokens, char c)
 {
-    tokens.push_back((unsigned)c);
+    tokens.push_back(c);
 }
 
-std::vector<int> RegexParsing::tokenize(const std::string text)
+auto RegexParsing::tokenize(const std::string &text) -> std::vector<int>
 {
     std::vector<int> tokens;
 
     bool inQuotes = false;
     bool inSquareBrackets = false;
-    for (size_t i = 0; text[i]; i++) {
+    for (size_t i = 0; text[i] != '\0'; i++) {
         char c = text[i];
 
         if (inQuotes) {
             if (c == '\"') {
                 inQuotes = false;
                 addSpecial(tokens, ')');
-            }
-            else {
+            } else {
                 addLiteral(tokens, c);
             }
             continue;
@@ -82,19 +85,20 @@ std::vector<int> RegexParsing::tokenize(const std::string text)
         if (inSquareBrackets) {
             // If there is a carat (^) at the beginning, this case is handled
             // when entering the square brackets.
-            if (c == ']') {
+            switch (c) {
+            case ']':
                 inSquareBrackets = false;
                 addSpecial(tokens, ']');
-            }
-            else if (c == '\\') {
+                break;
+            case '\\':
                 c = text[++i];
                 assert(c != '\0');
                 addLiteral(tokens, escape(c));
-            }
-            else if (c == '-') {
+                break;
+            case '-':
                 addSpecial(tokens, c);
-            }
-            else {
+                break;
+            default:
                 addLiteral(tokens, c);
             }
             continue;
@@ -147,7 +151,7 @@ std::vector<int> RegexParsing::tokenize(const std::string text)
     return tokens;
 }
 
-static bool equalsSpecial(int token, char c)
+static auto equalsSpecial(int token, char c) -> bool
 {
     return token < 0 && (char)(-token) == c;
 }
@@ -166,7 +170,8 @@ static bool equalsSpecial(int token, char c)
  *       takes care of that, and [] are checked to be matched earlier
  */
 // TODO: check for non-determinism
-bool RegexParsing::validate(const std::vector<int> &tokens)
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+auto RegexParsing::validate(const std::vector<int> &tokens) -> bool
 {
     // empty expression
     if (tokens.size() == 0) {
@@ -180,14 +185,11 @@ bool RegexParsing::validate(const std::vector<int> &tokens)
     for (int token : tokens) {
         if (equalsSpecial(token, '(')) {
             parenDepth++;
-        }
-        else if (equalsSpecial(token, ')')) {
+        } else if (equalsSpecial(token, ')')) {
             parenDepth--;
-        }
-        else if (equalsSpecial(token, '[')) {
+        } else if (equalsSpecial(token, '[')) {
             bracketDepth++;
-        }
-        else if (equalsSpecial(token, ']')) {
+        } else if (equalsSpecial(token, ']')) {
             bracketDepth--;
         }
         if (parenDepth < 0 || bracketDepth < 0) {
@@ -202,14 +204,15 @@ bool RegexParsing::validate(const std::vector<int> &tokens)
 
     // Check empty () and []
     for (unsigned i = 1; i < tokens.size(); i++) {
-        if (equalsSpecial(tokens[i], ')') &&
-            equalsSpecial(tokens[i - 1], '(')) {
+        if (equalsSpecial(tokens[i], ')') && equalsSpecial(tokens[i - 1], '('))
+        {
             DBG << "Validation failed: Empty ()\n";
             return false;
         }
-        if (equalsSpecial(tokens[i], ']') &&
-            (equalsSpecial(tokens[i - 1], '[') ||
-             equalsSpecial(tokens[i - 1], '^'))) {
+        if (equalsSpecial(tokens[i], ']')
+            && (equalsSpecial(tokens[i - 1], '[')
+                || equalsSpecial(tokens[i - 1], '^')))
+        {
             DBG << "Validation failed: Empty []\n";
             return false;
         }
@@ -217,8 +220,9 @@ bool RegexParsing::validate(const std::vector<int> &tokens)
 
     // on the left side of alternation: literal or -)].*+
     // on the right side of alternation: literal or -([.
-    if (equalsSpecial(tokens[0], '|') ||
-        equalsSpecial(tokens[tokens.size() - 1], '|')) {
+    if (equalsSpecial(tokens[0], '|')
+        || equalsSpecial(tokens[tokens.size() - 1], '|'))
+    {
         DBG << "Validation failed: | is the first or last character\n";
         return false;
     }
@@ -226,37 +230,42 @@ bool RegexParsing::validate(const std::vector<int> &tokens)
         if (!equalsSpecial(tokens[i], '|')) {
             continue;
         }
-        if (!(tokens[i - 1] > 0 || equalsSpecial(tokens[i - 1], ')') ||
-              equalsSpecial(tokens[i - 1], ']') ||
-              equalsSpecial(tokens[i - 1], '.') ||
-              equalsSpecial(tokens[i - 1], '+') ||
-              equalsSpecial(tokens[i - 1], '*') ||
-              equalsSpecial(tokens[i - 1], '?'))) {
+        if (!(tokens[i - 1] > 0 || equalsSpecial(tokens[i - 1], ')')
+              || equalsSpecial(tokens[i - 1], ']')
+              || equalsSpecial(tokens[i - 1], '.')
+              || equalsSpecial(tokens[i - 1], '+')
+              || equalsSpecial(tokens[i - 1], '*')
+              || equalsSpecial(tokens[i - 1], '?')))
+        {
             DBG << "Validation failed: Invalid left side of |\n";
             return false;
         }
-        if (!(tokens[i + 1] > 0 || equalsSpecial(tokens[i + 1], '(') ||
-              equalsSpecial(tokens[i + 1], '[') ||
-              equalsSpecial(tokens[i + 1], '.'))) {
+        if (!(tokens[i + 1] > 0 || equalsSpecial(tokens[i + 1], '(')
+              || equalsSpecial(tokens[i + 1], '[')
+              || equalsSpecial(tokens[i + 1], '.')))
+        {
             DBG << "Validation failed: Invalid right side of |\n";
             return false;
         }
     }
 
     // plus/star/opt comes after a literal or -)].
-    if (equalsSpecial(tokens[0], '+') || equalsSpecial(tokens[0], '*') ||
-        equalsSpecial(tokens[0], '?')) {
+    if (equalsSpecial(tokens[0], '+') || equalsSpecial(tokens[0], '*')
+        || equalsSpecial(tokens[0], '?'))
+    {
         DBG << "Validation failed: + or * or ? at beginning\n";
         return false;
     }
     for (unsigned i = 1; i < tokens.size(); i++) {
-        if (!equalsSpecial(tokens[i], '+') && !equalsSpecial(tokens[i], '*') &&
-            !equalsSpecial(tokens[i], '*')) {
+        if (!equalsSpecial(tokens[i], '+') && !equalsSpecial(tokens[i], '*')
+            && !equalsSpecial(tokens[i], '*'))
+        {
             continue;
         }
-        if (!(tokens[i - 1] > 0 || equalsSpecial(tokens[i - 1], ')') ||
-              equalsSpecial(tokens[i - 1], ']') ||
-              equalsSpecial(tokens[i - 1], '.'))) {
+        if (!(tokens[i - 1] > 0 || equalsSpecial(tokens[i - 1], ')')
+              || equalsSpecial(tokens[i - 1], ']')
+              || equalsSpecial(tokens[i - 1], '.')))
+        {
             DBG << "Validation failed: Invalid left side of + or * or ?\n";
             return false;
         }
@@ -272,7 +281,7 @@ bool RegexParsing::validate(const std::vector<int> &tokens)
         if (!equalsSpecial(tokens[i], '-')) {
             continue;
         }
-        if (!(tokens[i - 1] > 0 && tokens[i + 1] > 0)) {
+        if (tokens[i - 1] <= 0 || tokens[i + 1] <= 0) {
             DBG << "Validation failed: Non-literals on side of - in []\n";
             return false;
         }
@@ -286,17 +295,15 @@ bool RegexParsing::validate(const std::vector<int> &tokens)
     return true;
 }
 
-std::string RegexParsing::tokensToString(const std::vector<int> &tokens)
+auto RegexParsing::tokensToString(const std::vector<int> &tokens) -> std::string
 {
     std::stringstream ss;
     for (int c : tokens) {
         if (isprint(c)) {
             ss << (char)c;
-        }
-        else if (c < 0) {
+        } else if (c < 0) {
             ss << (char)(-c);
-        }
-        else {
+        } else {
             ss << std::hex << "0x" << c << std::dec;
         }
     }
@@ -329,9 +336,12 @@ std::string RegexParsing::tokensToString(const std::vector<int> &tokens)
  * - check for char
  *     - assert the only char is a literal or -'.'
  */
-RegexParsing::Pattern::Pattern(std::string text) : Pattern(tokenize(text)) {}
+RegexParsing::Pattern::Pattern(const std::string &text)
+    : Pattern(tokenize(text))
+{}
 
-RegexParsing::Pattern::Pattern(std::vector<int> tokens)
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+RegexParsing::Pattern::Pattern(const std::vector<int> &tokens)
 {
     DBG << "Constructing pattern with text: " << tokensToString(tokens) << "\n";
     assert(validate(tokens));
@@ -342,8 +352,7 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
     for (unsigned i = 0; i < tokens.size() - 1; i++) {
         if (equalsSpecial(tokens[i], '(')) {
             depth++;
-        }
-        else if (equalsSpecial(tokens[i], ')')) {
+        } else if (equalsSpecial(tokens[i], ')')) {
             depth--;
         }
         if (depth == 0) {
@@ -383,11 +392,9 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
     for (unsigned i = 0; i < tokens.size(); i++) {
         if (equalsSpecial(tokens[i], '(')) {
             depth++;
-        }
-        else if (equalsSpecial(tokens[i], ')')) {
+        } else if (equalsSpecial(tokens[i], ')')) {
             depth--;
-        }
-        else if (depth == 0 && equalsSpecial(tokens[i], '|')) {
+        } else if (depth == 0 && equalsSpecial(tokens[i], '|')) {
             auto left = std::vector<int>(tokens.begin(), tokens.begin() + i);
             auto right = std::vector<int>(tokens.begin() + i + 1, tokens.end());
             DBG << "Alternate: left=" << tokensToString(left)
@@ -403,16 +410,17 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
     depth = 0;
     int nPieces = 0;
     for (unsigned i = 0; i < tokens.size(); i++) {
-        if (depth == 0 && !equalsSpecial(tokens[i], '+') &&
-            !equalsSpecial(tokens[i], '+') && !equalsSpecial(tokens[i], '*') &&
-            !equalsSpecial(tokens[i], '?')) {
+        if (depth == 0 && !equalsSpecial(tokens[i], '+')
+            && !equalsSpecial(tokens[i], '+') && !equalsSpecial(tokens[i], '*')
+            && !equalsSpecial(tokens[i], '?'))
+        {
             nPieces++;
         }
         if (equalsSpecial(tokens[i], '(') || equalsSpecial(tokens[i], '[')) {
             depth++;
-        }
-        else if (equalsSpecial(tokens[i], ')') ||
-                 equalsSpecial(tokens[i], ']')) {
+        } else if (equalsSpecial(tokens[i], ')')
+                   || equalsSpecial(tokens[i], ']'))
+        {
             depth--;
         }
         if (nPieces > 1) {
@@ -462,23 +470,20 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
                     return false;
                 }
                 for (unsigned i = 1; i < inner.size(); i++) {
-                    if (i + 1 < inner.size() &&
-                        equalsSpecial(inner[i + 1], '-')) {
+                    if (i + 1 < inner.size()
+                        && equalsSpecial(inner[i + 1], '-'))
+                    {
                         if (c >= inner[i] && c <= inner[i + 2]) {
                             return false;
                         }
                         i += 2;
-                    }
-                    else {
-                        if (c == inner[i]) {
-                            return false;
-                        }
+                    } else if (c == inner[i]) {
+                        return false;
                     }
                 }
                 return true;
             };
-        }
-        else {
+        } else {
             DBG << "Non-inverted choice\n";
             charChoicePred = [inner](char c) {
                 DBG << "calling non-inverted choice with c=" << c << "\n";
@@ -488,19 +493,17 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
                 DBG << "size of inner: " << inner.size() << "\n";
                 for (unsigned i = 0; i < inner.size(); i++) {
                     DBG << "checking choice char " << i << "\n";
-                    if (i + 1 < inner.size() &&
-                        equalsSpecial(inner[i + 1], '-')) {
+                    if (i + 1 < inner.size()
+                        && equalsSpecial(inner[i + 1], '-'))
+                    {
                         DBG << "range from " << inner[i] << " to "
                             << inner[i + 2] << "\n";
                         if (c >= inner[i] && c <= inner[i + 2]) {
                             return true;
                         }
                         i += 2;
-                    }
-                    else {
-                        if (c == inner[i]) {
-                            return true;
-                        }
+                    } else if (c == inner[i]) {
+                        return true;
                     }
                 }
                 DBG << "did not match :(\n";
@@ -524,11 +527,11 @@ RegexParsing::Pattern::Pattern(std::vector<int> tokens)
     DBG << "Char: literal=" << tokensToString(tokens) << "\n";
     assert(tokens[0] > 0);
     type = Char;
-    literalChar = tokens[0];
-    return;
+    literalChar = static_cast<char>(tokens[0]);
 }
 
-std::unique_ptr<lexer::Node> RegexParsing::toNode(std::shared_ptr<Pattern> p)
+auto RegexParsing::toNode(const std::shared_ptr<Pattern> &p)
+    -> std::unique_ptr<lexer::Node>
 {
     using namespace lexer;
     DBG << "Creating node from pattern...\n";
@@ -560,7 +563,8 @@ std::unique_ptr<lexer::Node> RegexParsing::toNode(std::shared_ptr<Pattern> p)
     }
 }
 
-std::unique_ptr<lexer::Node> RegexParsing::toNode(const std::string text)
+auto RegexParsing::toNode(const std::string &text)
+    -> std::unique_ptr<lexer::Node>
 {
     DBG << "Converting " << text << " to node\n";
     std::shared_ptr<Pattern> p = std::make_shared<Pattern>(text);
